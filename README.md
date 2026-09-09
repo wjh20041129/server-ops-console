@@ -54,10 +54,6 @@ python3 exam_system/app.py
 
 > ⚠️ 本仓库为**代码归档/展示副本**，不含任何密钥、`.env`、上传文件、数据库数据或 IP 黑名单。完整运行需自行配置环境变量与数据库。
 
-## 文档
-
-- [`INTERVIEW_CHEATSHEET.md`](INTERVIEW_CHEATSHEET.md) — 架构讲解、面试问答、快速补习卡
-
 ## 提交卫生
 
 仓库通过 `.gitignore` 严格排除：密钥(`*.env`/`*.key`/`auth.json`/`session.key`)、数据库密码配置、SMTP 授权码、备份文件、上传数据、日志与 IP 黑名单。
