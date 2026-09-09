@@ -34,7 +34,7 @@
 ## 核心能力与亮点
 
 - **高可用**：全部服务 systemd 托管，崩溃自动拉起；控制台独立进程，停 MySQL/Nginx 不掉线
-- **安全**：登录鉴权 + `auth_request` 子路径鉴权 + fail2ban 暴力破解防护 + IP 黑名单 + HTTPS
+- **安全**：登录鉴权 + `auth_request` 子路径鉴权 + fail2ban 暴力破解防护 + HTTPS
 - **监控**：CPU/内存/磁盘环形仪表盘、LoadAvg/Uptime/网络流量、MySQL 连接数/慢查询/库表体积
 - **AI 集成**：exam 用通义千问生成题目，多层质量校验 + 置信度评分，只基于权威白名单材料
 - **资源友好**：纯轻量 Python，无重框架；控制台 `OOMScoreAdjust=-900` 优先保活
@@ -52,8 +52,5 @@ pip install -r exam_system/requirements.txt
 python3 exam_system/app.py
 ```
 
-> ⚠️ 本仓库为**代码归档/展示副本**，不含任何密钥、`.env`、上传文件、数据库数据或 IP 黑名单。完整运行需自行配置环境变量与数据库。
+> ⚠️ 本仓库为**代码归档/展示副本**，不含任何密钥与 `.env` 配置。完整运行需自行配置环境变量与数据库。
 
-## 提交卫生
-
-仓库通过 `.gitignore` 严格排除：密钥(`*.env`/`*.key`/`auth.json`/`session.key`)、数据库密码配置、SMTP 授权码、备份文件、上传数据、日志与 IP 黑名单。
