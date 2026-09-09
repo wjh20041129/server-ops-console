@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🍽️ 点菜菜单</title>
+<style>
+  :root {
+    --primary:#0ea86a; --bg:#eef1f4; --card:#ffffff; --text:#2a3440;
+    --muted:#7a8a9c; --line:#e2e8ee;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         background:var(--bg); color:var(--text); }
+  .topbar { position:sticky; top:0; z-index:100; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.06); padding:14px 16px; }
+  .topbar h1 { font-size:18px; }
+  .topbar .sub { font-size:12px; color:var(--muted); margin-top:3px; }
+
+  .layout { display:flex; height:calc(100vh - 60px); }
+  .cats { width:90px; background:#e8edf2; overflow-y:auto; flex-shrink:0; }
+  .cats .cat { padding:16px 6px; font-size:13px; color:#666; text-align:center;
+               border-left:3px solid transparent; cursor:pointer; line-height:1.3; }
+  .cats .cat.active { background:#fff; color:var(--primary); border-left-color:var(--primary); font-weight:600; }
+  .cats .cat .ci { font-size:22px; margin-bottom:3px; }
+
+  .dishes { flex:1; overflow-y:auto; padding:12px 10px 130px; }
+  .dish-group { margin-bottom:18px; }
+  .dish-group h2 { font-size:15px; margin-bottom:10px; color:#555; padding-left:4px; }
+
+  /* 菜品卡片：图片+名字 在左，加减 在右 */
+  .dish-row { background:var(--card); border-radius:14px; overflow:hidden; margin-bottom:12px;
+              box-shadow:0 1px 4px rgba(0,0,0,.05); display:flex; }
+  .dish-img { width:108px; height:108px; flex-shrink:0; background:#f3ece3; }
+  .dish-img img { width:100%; height:100%; object-fit:cover; display:block; }
+  .dish-body { flex:1; min-width:0; display:flex; flex-direction:column; justify-content:space-between; padding:10px 12px; }
+  .dish-name { font-size:16px; font-weight:600; }
+  .dish-desc { font-size:12px; color:var(--muted); margin-top:4px; line-height:1.4; display:-webkit-box;
+               -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+  .dish-bottom { display:flex; align-items:center; justify-content:space-between; margin-top:6px; }
+  .dish-tags { display:flex; gap:5px; flex-wrap:wrap; }
+  .mini-tag { font-size:10px; padding:1px 7px; border-radius:10px; background:#e8f3ee; color:#1c8a5a; }
+  .stepper { display:flex; align-items:center; gap:10px; }
+  .stepper button { width:30px; height:30px; border:none; border-radius:50%; font-size:20px; line-height:1;
+                    display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .stepper .minus { background:#f0f0f0; color:#333; }
+  .stepper .minus:disabled { opacity:.3; cursor:not-allowed; }
+  .stepper .add { background:var(--primary); color:#fff; }
+  .stepper .count { min-width:22px; text-align:center; font-weight:700; font-size:16px; }
+  /* 未选时显示大号加号按钮 */
+  .add-big { border:none; background:var(--primary); color:#fff; border-radius:20px;
+             padding:6px 16px; font-size:13px; font-weight:600; cursor:pointer; }
+
+  .cartbar { position:fixed; left:90px; right:0; bottom:0; height:64px; background:#fff;
+             border-top:1px solid var(--line); display:flex; align-items:center; padding:0 16px; gap:14px;
+             box-shadow:0 -2px 10px rgba(0,0,0,.06); }
+  .cart-icon { position:relative; font-size:30px; }
+  .cart-badge { position:absolute; top:-4px; right:-10px; background:var(--primary); color:#fff; font-size:11px;
+                min-width:18px; height:18px; border-radius:10px; display:flex; align-items:center;
+                justify-content:center; padding:0 4px; }
+  .cart-total { font-size:13px; color:var(--muted); flex:1; }
+  .cart-total b { font-size:20px; color:var(--text); }
+  .submit-btn { background:var(--primary); color:#fff; border:none; border-radius:25px; padding:12px 26px;
+                font-size:15px; font-weight:600; cursor:pointer; box-shadow:0 4px 10px rgba(255,107,53,.3); }
+  .submit-btn:disabled { background:#ccc; box-shadow:none; cursor:not-allowed; }
+
+  .mask { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; display:none;
+          align-items:flex-end; justify-content:center; }
+  .mask.show { display:flex; }
+  .sheet { background:#fff; width:100%; max-width:520px; border-radius:18px 18px 0 0; max-height:80vh;
+           overflow:auto; padding:20px; animation:slideUp .25s ease; }
+  @keyframes slideUp { from{ transform:translateY(40px); opacity:0;} to{ transform:none; opacity:1;} }
+  .sheet h3 { margin-bottom:14px; font-size:17px; }
+  .sel-item { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); }
+  .sel-item .nm { font-size:14px; }
+  .sel-item .l { display:flex; align-items:center; gap:10px; }
+  .sel-item .l img { width:40px; height:40px; border-radius:8px; object-fit:cover; }
+  .sel-item .r { display:flex; align-items:center; gap:10px; }
+  .mini-btn { width:26px; height:26px; border:none; border-radius:50%; font-size:16px; cursor:pointer;
+              display:flex; align-items:center; justify-content:center; }
+  .mini-btn.m { background:#f0f0f0; color:#333; }
+  .mini-btn.p { background:var(--primary); color:#fff; }
+  .as-price { text-align:right; color:var(--primary); font-weight:700; font-size:17px; margin:14px 0; }
+  .big-btn { width:100%; background:var(--primary); color:#fff; border:none; border-radius:12px;
+             padding:14px; font-size:16px; font-weight:600; cursor:pointer; }
+  .tip { font-size:12px; color:var(--muted); text-align:center; margin-top:10px; }
+  .close-x { float:right; border:none; background:none; font-size:20px; cursor:pointer; color:var(--muted); }
+
+  .success { position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.6); display:none;
+             align-items:center; justify-content:center; padding:20px; }
+  .success.show { display:flex; }
+  .success-box { background:#fff; border-radius:16px; padding:36px 30px; text-align:center; max-width:320px; width:100%; }
+  .success-box .emoji { font-size:60px; }
+  .success-box h2 { margin:12px 0 6px; font-size:20px; }
+  .success-box p { color:var(--muted); font-size:14px; line-height:1.7; }
+
+  .loading { text-align:center; padding:80px 20px; color:var(--muted); font-size:14px; }
+  .err { text-align:center; padding:60px 20px; color:#d33; font-size:14px; }
+
+  /* —— 暗夜模式：html.dark 时生效，默认暗色；主色保留品牌橙，字底对比 >7:1 —— */
+  html.dark{ color-scheme:dark;
+    --bg:#14161b; --card:#1f232c; --text:#e8eaf0; --muted:#9aa1ad; --line:#31363f;
+  }
+  html.dark body{ background:var(--bg); color:var(--text); }
+  html.dark .topbar{ background:#1b1f27; color:#e8eaf0; box-shadow:0 1px 4px rgba(0,0,0,.5); }
+  html.dark .cats{ background:#171a20; }
+  html.dark .cats .cat{ color:#9aa1ad; }
+  html.dark .cats .cat.active{ background:#242a34; color:#3ddc84; border-left-color:#3ddc84; }
+  html.dark .dish-group h2{ color:#cdd2da; }
+  html.dark .dish-row{ background:var(--card); }
+  html.dark .dish-img{ background:#2a2120; }
+  html.dark .mini-tag{ background:#2b2a22; color:#e6b85c; }
+  html.dark .stepper .minus{ background:#343a44; color:#e7e9ee; }
+  html.dark .cartbar{ background:#1b1f27; color:#e8eaf0; border-top-color:var(--line); }
+  html.dark .sheet{ background:#1f232c; color:#e8eaf0; }
+  html.dark .success-box{ background:#1f232c; color:#e8eaf0; }
+  html.dark .submit-btn:disabled{ background:#3a3f4a; color:#6b7280; }
+
+  /* ====== 塔科夫实验室增强层 (仅暗色生效 · 冷灰金属+荧光绿/冷青) ====== */
+  html.dark{
+    --primary:#3ddc84; --bg:#0b0f14; --card:rgba(23,30,40,.62);
+    --text:#dce4ea; --muted:#7d8a99; --line:rgba(61,220,132,.22);
+  }
+  html.dark body{ background:
+      radial-gradient(900px 500px at 90% -10%, rgba(61,220,132,.10), transparent 55%),
+      radial-gradient(800px 420px at -10% 0%, rgba(56,182,224,.08), transparent 55%),
+      #0b0f14; }
+  /* 顶部栏金属玻璃 */
+  html.dark .topbar{ background:rgba(12,16,22,.66); backdrop-filter:blur(18px) saturate(140%);
+      -webkit-backdrop-filter:blur(18px) saturate(140%); border-bottom:1px solid rgba(61,220,132,.18); }
+  html.dark .topbar h1{ color:#dce4ea; text-shadow:0 0 12px rgba(61,220,132,.22); }
+  html.dark .cats{ background:rgba(12,16,22,.5); backdrop-filter:blur(12px); }
+  html.dark .cats .cat{ color:#7d8a99; }
+  html.dark .cats .cat.active{ background:rgba(61,220,132,.1); color:#3ddc84; border-left-color:#3ddc84;
+      text-shadow:0 0 10px rgba(61,220,132,.4); box-shadow:inset 0 0 18px rgba(61,220,132,.08); }
+  /* 菜单卡金属玻璃 */
+  html.dark .dish-row{ background:linear-gradient(160deg, rgba(23,30,40,.6), rgba(14,19,27,.58));
+      backdrop-filter:blur(14px) saturate(135%); -webkit-backdrop-filter:blur(14px) saturate(135%);
+      border:1px solid rgba(90,110,130,.26); border-radius:12px;
+      box-shadow:0 4px 20px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.04); }
+  html.dark .dish-group h2{ color:#cdd6df; }
+  html.dark .mini-tag{ background:rgba(246,201,69,.12); color:#f6d98a; border:1px solid rgba(246,201,69,.35); }
+  html.dark .stepper .minus{ background:rgba(56,182,224,.15); color:#cfe8f5; border:1px solid rgba(56,182,224,.4); }
+  /* 购物车金属玻璃 */
+  html.dark .cartbar{ background:rgba(12,16,22,.76); backdrop-filter:blur(20px) saturate(145%);
+      -webkit-backdrop-filter:blur(20px) saturate(145%); border-top:1px solid rgba(61,220,132,.2); }
+  html.dark .sheet, html.dark .success-box{ background:linear-gradient(160deg, rgba(23,30,40,.94), rgba(12,17,24,.94));
+      backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+      border:1px solid rgba(90,110,130,.34); border-radius:20px 20px 0 0;
+      box-shadow:0 -6px 40px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.04); }
+  html.dark .submit-btn:disabled{ background:rgba(58,63,74,.5); color:#6b7280; }
+  /* 主题切换按钮 (白天基础定位) */
+  .theme-toggle{ position:fixed; top:14px; right:14px; z-index:400; width:34px; height:34px;
+      border-radius:50%; border:1px solid var(--line); background:var(--card); color:var(--text);
+      cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;
+      box-shadow:0 1px 6px rgba(0,0,0,.18); }
+  html.dark .theme-toggle{ background:rgba(61,220,132,.12); color:#3ddc84; border-color:rgba(61,220,132,.5);
+      box-shadow:0 0 12px rgba(61,220,132,.22); }
+  html.dark .theme-toggle:hover{ background:rgba(61,220,132,.24); box-shadow:0 0 18px rgba(61,220,132,.4); }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="日/夜模式" aria-label="切换日间/夜间模式">🌙</button>
+<div class="topbar">
+  <h1>🍳 宝贝点菜</h1>
+  <div class="sub">点好菜，我马上开做 🧑‍🍳</div>
+</div>
+
+<div class="layout">
+  <div class="cats" id="cats"></div>
+  <div class="dishes" id="dishes">
+    <div class="loading">加载菜单中…</div>
+  </div>
+</div>
+
+<div class="cartbar" style="display:none" id="cartbar">
+  <div class="cart-icon" onclick="openCart()">🛒<span class="cart-badge" id="cartBadge">0</span></div>
+  <div class="cart-total">已选 <b id="cartCount">0</b> 份</div>
+  <button class="submit-btn" id="submitBtn" disabled onclick="openCart()">去下单</button>
+</div>
+
+<div class="mask" id="cartMask">
+  <div class="sheet">
+    <button class="close-x" onclick="closeCart()">✕</button>
+    <h3>🛒 已选清单</h3>
+    <div id="cartList"></div>
+    <div class="as-price" id="asPrice"></div>
+    <button class="big-btn" onclick="submitOrder()">提交给男朋友 🧑‍🍳</button>
+    <div class="tip">提交后我马上收到，开做~</div>
+  </div>
+</div>
+
+<div class="success" id="successBox">
+  <div class="success-box">
+    <div class="emoji">✅</div>
+    <h2>下单成功！</h2>
+    <p id="successMsg"></p>
+    <button class="big-btn" style="margin-top:18px" onclick="closeSuccess()">好的</button>
+  </div>
+</div>
+
+<script>
+let MENU = [];            // [{id,name,icon,items:[...]}]
+let cart = {};            // {dishId: qty}
+
+/* 图片/接口地址尽量用相对路径，兼容直连 :8090 与经 nginx 的 /menu/ 前缀挂载。 */
+function relImg(u){ if(!u) return u; if(/^[a-z][a-z0-9+.-]*:/i.test(u)||u.indexOf('//')===0) return u; return u.replace(/^\/+/,''); }
+
+/* 下单人：从家人门户进入时带 ?diner=<用户名>，记到本机，供下单署名。未登录直接开页 = 匿名。 */
+let DINER = '';
+function initDiner(){
+  try{ DINER = localStorage.getItem('menu_diner') || ''; }catch(e){ DINER=''; }
+  var q = new URLSearchParams(location.search);
+  var d = (q.get('diner')||'').trim().replace(/[<>"']/g,'').slice(0,64);
+  if(d){
+    DINER = d;
+    try{ localStorage.setItem('menu_diner', d); }catch(e){}
+    q.delete('diner');
+    var u = location.pathname + (q.toString()? '?'+q.toString() : '');
+    try{ history.replaceState(null,'',u); }catch(e){}
+  }
+}
+function whoAmI(){ return DINER; }
+
+async function loadMenu(){
+  try{
+    const res = await fetch('api/menu');
+    MENU = await res.json();
+    if(!MENU.length){ document.getElementById('dishes').innerHTML='<div class="err">菜单为空</div>'; return; }
+    renderCats(MENU[0].id); renderDishes(); updateCartUI();
+  }catch(e){
+    document.getElementById('dishes').innerHTML='<div class="err">加载失败，请确认服务已启动</div>';
+  }
+}
+
+function renderCats(activeId){
+  document.getElementById('cats').innerHTML = MENU.map(c =>
+    `<div class="cat ${c.id===activeId?'active':''}" onclick="scrollToCat(${c.id})">
+       <div class="ci">${c.icon}</div>${c.name}
+     </div>`).join('');
+}
+
+function renderDishes(){
+  const box = document.getElementById('dishes');
+  box.innerHTML = '';
+  MENU.forEach(c => {
+    const g = document.createElement('div');
+    g.className='dish-group'; g.id='cat-'+c.id;
+    g.innerHTML = `<h2>${c.icon} ${c.name}</h2>` + c.items.map(d => {
+      const q = cart[d.id]||0;
+      return `
+      <div class="dish-row">
+        <div class="dish-img">
+          <img src="${relImg(d.image)}" alt="${d.name}" onerror="this.src='${relImg('/img/dish_'+d.id+'.svg')}'">
+        </div>
+        <div class="dish-body">
+          <div>
+            <div class="dish-name">${d.name}</div>
+            ${d.desc?'<div class="dish-desc">'+d.desc+'</div>':''}
+          </div>
+          <div class="dish-bottom">
+            <div class="dish-tags">${(d.tags||[]).map(t=>`<span class="mini-tag">${t}</span>`).join('')}</div>
+            ${q>0 ?
+              `<div class="stepper">
+                 <button class="minus" onclick="changeQty(${d.id},-1)">−</button>
+                 <span class="count" id="cnt-${d.id}">${q}</span>
+                 <button class="add" onclick="changeQty(${d.id},1)">＋</button>
+               </div>` :
+              `<button class="add-big" onclick="changeQty(${d.id},1)">＋ 点这个</button>`}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    box.appendChild(g);
+  });
+}
+
+function changeQty(id, delta){
+  cart[id] = (cart[id]||0) + delta;
+  if(cart[id]<=0) delete cart[id];
+  // 局部更新该菜卡片
+  const dish = findDish(id);
+  if(dish){
+    // 简化：整组重渲染保持一致性，但避免闪烁——只更新数显
+    const q = cart[id]||0;
+    const disp = document.getElementById('cnt-'+id);
+    if(disp){ disp.textContent = q; }
+  }
+  updateCartUI();
+  renderDishes();
+}
+
+function count(){ let n=0; Object.values(cart).forEach(q=>n+=q); return n; }
+function updateCartUI(){
+  const c = count();
+  document.getElementById('cartbar').style.display = c>0 ? 'flex':'none';
+  document.getElementById('cartBadge').textContent = c;
+  document.getElementById('cartCount').textContent = c;
+  document.getElementById('submitBtn').disabled = c===0;
+}
+
+function scrollToCat(id){
+  document.getElementById('cat-'+id).scrollIntoView({behavior:'smooth', block:'start'});
+  renderCats(id);
+}
+document.querySelector('.dishes').addEventListener('scroll', ()=>{
+  const sc = document.querySelector('.dishes');
+  let cur = MENU[0] && MENU[0].id;
+  MENU.forEach(c=>{ const el=document.getElementById('cat-'+c.id);
+    if(el && el.offsetTop <= sc.scrollTop+5) cur = c.id; });
+  renderCats(cur);
+});
+
+function findDish(id){
+  for(const c of MENU){ const f=c.items.find(d=>d.id===id); if(f) return f; }
+}
+
+function openCart(){
+  if(!count()) return;
+  const list = document.getElementById('cartList');
+  list.innerHTML = Object.entries(cart).map(([id,q])=>{
+    const d = findDish(+id);
+    return `<div class="sel-item">
+      <div class="l"><img src="${relImg(d.image)}" onerror="this.src='${relImg('/img/dish_'+d.id+'.svg')}'"><span class="nm">${d.name}</span></div>
+      <div class="r">
+        <button class="mini-btn m" onclick="ch(${id},-1)">−</button>
+        <span>${q}</span>
+        <button class="mini-btn p" onclick="ch(${id},1)">＋</button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('asPrice').textContent='共 '+count()+' 份';
+  document.getElementById('cartMask').classList.add('show');
+}
+function ch(id,d){ changeQty(id,d); openCart(); }
+function closeCart(){ document.getElementById('cartMask').classList.remove('show'); }
+
+async function submitOrder(){
+  closeCart();
+  const names = Object.entries(cart).map(([id,q])=>{ const d=findDish(+id); return d.name+' ×'+q; });
+  const who = whoAmI();
+  document.getElementById('successMsg').innerHTML=
+    '收到啦：<br><b>'+names.join('、')+'</b><br><br>'+
+    (who? ('<span style="opacity:.8">由 <b>'+who+'</b> 点的 · </span>') : '')+
+    '我马上开做 🍳';
+  document.getElementById('successBox').classList.add('show');
+  const payload = {};
+  Object.entries(cart).forEach(([id,q])=> payload[id]=q);
+  try{ await fetch('api/order',{method:'POST',headers:{'Content-Type':'application/json'},
+         body:JSON.stringify({items:payload, time:new Date().toISOString(), who:who})}); }catch(e){}
+  cart={};
+  updateCartUI(); renderDishes();
+}
+function closeSuccess(){ document.getElementById('successBox').classList.remove('show'); }
+
+/* 主题：默认暗色；按钮日/夜切换，选择记住在 localStorage */
+(function(){
+  var KEY='menu_theme';
+  var darkDefault = localStorage.getItem(KEY);
+  if(darkDefault===null) darkDefault='dark';          // 首次/无记录 → 默认暗色
+  var isDark = darkDefault!=='light';
+  document.documentElement.classList.toggle('dark', isDark);
+  var btn=document.getElementById('themeToggle');
+  if(btn){ btn.textContent= isDark? '☀️':'🌙';
+    btn.onclick=function(){ isDark=!isDark;
+      document.documentElement.classList.toggle('dark', isDark);
+      btn.textContent = isDark? '☀️':'🌙';
+      try{ localStorage.setItem(KEY, isDark?'dark':'light'); }catch(e){}
+    };
+  }
+})();
+
+initDiner();
+loadMenu();
+</script>
+</body>
+</html>

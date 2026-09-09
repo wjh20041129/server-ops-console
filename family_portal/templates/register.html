@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}注册 · 家人门户{% endblock %}
+{% block body %}
+<h1>📝 注册新账号</h1>
+<p class="sub">提交后需管理员在邮箱点击确认链接，方可激活登录</p>
+<form method="post">
+  <label>用户名（字母数字，≥3位）</label>
+  <input name="username" required pattern="[A-Za-z0-9_\-]{3,20}" title="仅字母数字_-，3-20位">
+  <div class="row2">
+    <div>
+      <label>密码（≥6位）</label>
+      <input type="password" name="password" required minlength="6">
+    </div>
+    <div>
+      <label>确认密码</label>
+      <input type="password" name="password2" required minlength="6">
+    </div>
+  </div>
+  <label>邮箱（可选，留待通知用）</label>
+  <input type="email" name="email">
+  <button class="btn" id="sb">提交注册申请</button>
+</form>
+<a class="ghost-link" href="/family/login">已有账号？去登录</a>
+{% endblock %}

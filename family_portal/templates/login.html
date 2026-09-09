@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}登录 · 家人门户{% endblock %}
+{% block body %}
+<h1>🔑 登录</h1>
+<p class="sub">进入你的私人空间</p>
+<form method="post">
+  <label>用户名</label>
+  <input name="username" required autocomplete="username">
+  <label>密码</label>
+  <input type="password" name="password" required autocomplete="current-password">
+  <button class="btn">登 录</button>
+</form>
+<a class="ghost-link" href="/family/">← 返回首页</a>
+<a class="ghost-link" href="/family/register" style="float:right">注册新账号</a>
+{% endblock %}

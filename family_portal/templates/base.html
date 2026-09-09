@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}家人门户{% endblock %}</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--line:#334155;--tx:#e2e8f0;--mut:#94a3b8;--acc:#38bdf8;--ok:#22c55e;--err:#ef4444}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--tx);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px 26px;width:min(92vw,400px);box-shadow:0 10px 30px rgba(0,0,0,.3)}
+h1{font-size:21px;margin-bottom:2px}
+p.sub{color:var(--mut);font-size:13px;margin-bottom:20px}
+label{display:block;font-size:13px;color:var(--mut);margin:14px 0 6px}
+input{width:100%;padding:11px 12px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--tx);font-size:15px;outline:none}
+input:focus{border-color:var(--acc)}
+.btn{display:block;width:100%;padding:12px;border-radius:10px;background:var(--acc);color:#062438;font-weight:700;border:none;font-size:15px;cursor:pointer;margin-top:20px}
+.btn:disabled{opacity:.5}
+.ghost-link{display:inline-block;margin-top:16px;color:var(--mut);font-size:13px;text-decoration:none}
+.ghost-link:hover{color:var(--tx)}
+.flash{margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:13px}
+.flash.ok{background:rgba(34,197,94,.12);color:var(--ok)}
+.flash.error{background:rgba(239,68,68,.12);color:var(--err)}
+.row2{display:flex;gap:8px}
+.row2 div{flex:1}
+</style>
+</head><body>
+<div class="card">
+{% with m=get_flashed_messages(with_categories=true) %}{% for c,t in m %}<div class="flash {{c}}">{{t}}</div>{% endfor %}{% endwith %}
+{% block body %}{% endblock %}
+</div>
+</body></html>

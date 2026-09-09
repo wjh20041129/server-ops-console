@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}确认注册 · 家人门户{% endblock %}
+{% block body %}
+<h1>👤 账号待激活</h1>
+{% if code == "VALID" %}
+  <p class="sub">以下账号申请注册，请确认是否开通：</p>
+  <div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px;margin:10px 0">
+    <div style="font-size:16px;font-weight:700">用户名：{{ info.username }}</div>
+    <div style="color:var(--mut);font-size:13px;margin-top:6px">申请邮箱：{{ info.email or '(未填)' }}</div>
+    <div style="color:var(--mut);font-size:12px;margin-top:4px">申请时间：{{ info.created_at }}</div>
+  </div>
+  <form method="post" action="{{ url_for('activate', token=token) }}">
+    <button class="btn" style="background:var(--ok)">✅ 确认激活该账号</button>
+  </form>
+  <p style="color:var(--mut);font-size:12px;margin-top:12px">确认后该用户即可登录，访问自己的独立云盘。</p>
+{% else %}
+  <p class="sub">此确认链接无效或已被处理。若确需开通，请让访客重新提交注册。</p>
+  <a class="btn ghost-link" href="/family/">返回首页</a>
+{% endif %}
+{% endblock %}

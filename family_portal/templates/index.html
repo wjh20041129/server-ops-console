@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>家人门户</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--line:#334155;--tx:#e2e8f0;--mut:#94a3b8;--acc:#38bdf8;--ok:#22c55e;--err:#ef4444}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--tx);display:flex;align-items:center;justify-content:center;min-height:100vh}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:36px 30px;width:min(92vw,360px);box-shadow:0 10px 30px rgba(0,0,0,.3);text-align:center}
+h1{font-size:24px;margin:8px 0 6px}
+p.sub{color:var(--mut);font-size:13px;margin-bottom:26px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:10px;background:var(--acc);color:#062438;font-weight:700;text-decoration:none;margin-top:12px;border:none;font-size:15px;cursor:pointer}
+.ghost{background:transparent;color:var(--tx);border:1px solid var(--line);font-weight:500}
+.btn .ic{font-size:17px}
+.flash{margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:13px}
+.flash.ok{background:rgba(34,197,94,.12);color:var(--ok)}
+.flash.error{background:rgba(239,68,68,.12);color:var(--err)}
+</style></head><body>
+<div class="card">
+  <div style="font-size:40px">🏠</div>
+  <h1>家人门户</h1>
+  <p class="sub">登录后使用私人云盘与点餐服务</p>
+  {% with m=get_flashed_messages(with_categories=true) %}{% for c,t in m %}<div class="flash {{c}}">{{t}}</div>{% endfor %}{% endwith %}
+  <a class="btn" href="/family/login"><span class="ic">🔑</span> 登 录</a>
+  <a class="btn ghost" href="/family/register"><span class="ic">📝</span> 注册新账号（需管理员确认）</a>
+</div>
+</body></html>

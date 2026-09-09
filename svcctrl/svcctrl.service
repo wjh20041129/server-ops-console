@@ -1,0 +1,18 @@
+[Unit]
+Description=SVCCtrl - Lightweight Service Control Panel
+After=network.target mysql.service nginx.service
+
+[Service]
+Type=simple
+WorkingDirectory=/root/svcctrl
+ExecStart=/usr/bin/python3 /root/svcctrl/app.py
+Restart=always
+RestartSec=3
+# 控制台自身尽量少的内存负担
+Environment=SVCCTRL_PORT=8750
+# 安全：不把控制台崩溃当常态，但允许 oom 后拉起
+OOMScoreAdjust=-900
+NoNewPrivileges=false
+
+[Install]
+WantedBy=multi-user.target

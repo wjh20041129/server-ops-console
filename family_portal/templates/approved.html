@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}已批准 · 家人门户{% endblock %}
+{% block body %}
+<div style="text-align:center;padding:16px 0">
+  <div style="font-size:52px">✅</div>
+  <h1>账号已批准</h1>
+  <p class="sub">该注册账号已通过管理员确认，现在可以登录使用了</p>
+  <div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px;margin:6px 0 4px">
+    <div style="font-size:17px;font-weight:700">👤 {{ username }}</div>
+    <div style="color:var(--ok);font-size:14px;margin-top:4px">状态：已激活</div>
+  </div>
+  <p style="color:var(--mut);font-size:13px;margin-top:14px">请让对方用该账号前往登录即可。管理员无需再做任何操作。</p>
+  <a class="ghost-link" href="/family/">← 返回门户首页</a>
+</div>
+{% endblock %}

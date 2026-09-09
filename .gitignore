@@ -1,0 +1,52 @@
+# ===== 敏感文件：绝不提交 =====
+# 密钥 / 凭据 / 会话
+*.key
+*.pem
+*.p12
+*.pfx
+auth.json
+session.key
+.env
+.env.*
+db.json
+db_config.json
+admin_config.json
+*secret*
+*.secret
+
+# 备份 / 临时文件（保留源目录里的，仓库不收录）
+*.bak*
+*.orig
+*.rej
+*~
+*.swp
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# ===== 日志 / 运行时数据 =====
+*.log
+logs/
+*.pid
+nohup.out
+
+# ===== 数据 / 上传 =====
+uploads/
+*.sqlite3
+*.db
+data/
+*.jsonl
+cet4.json
+*.shot*
+.shots/
+img/
+
+# ===== IDE / OS =====
+.vscode/
+.idea/
+.DS_Store
+Thumbs.dbsvcctrl/blocklist.json
+blocklist.json

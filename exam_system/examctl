@@ -1,0 +1,303 @@
+#!/bin/bash
+# ============================================================
+#  examctl - 公考学习系统统一控制脚本
+#  管理: Flask(exam-system) + 生成器(exam-generator)
+#        + 四级预加载(cet4-preload) + Ollama容器 + MySQL
+#  用法: ./examctl {start|stop|restart|status|logs|help}
+# ============================================================
+
+APP_NAME="公考学习系统"
+APP_DIR="/root/exam_system"
+OLLAMA_CONTAINER="ollama"
+FLASK_PORT=5000
+OLLAMA_PORT=11434
+
+# systemd 服务列表（按启动顺序）
+SYSTEMD_SERVICES=("exam-system" "exam-generator" "cet4-preload")
+
+# 颜色输出
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+print_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+print_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+print_header() {
+    echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║${NC}  $1"
+    echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
+}
+
+# 服务显示名
+svc_label() {
+    case "$1" in
+        exam-system) echo "Flask服务 (exam-system)";;
+        exam-generator) echo "题目生成器 (exam-generator)";;
+        cet4-preload) echo "四级预加载 (cet4-preload)";;
+        mysql) echo "MySQL数据库";;
+        ollama) echo "Ollama容器";;
+        *) echo "$1";;
+    esac
+}
+
+# 检查 systemd 服务是否启用自启
+svc_enabled() {
+    systemctl is-enabled "$1" >/dev/null 2>&1
+    return $?
+}
+
+# ========== 启动 ==========
+start_all() {
+    print_header "🚀 启动 $APP_NAME"
+    echo ""
+    
+    # 1. MySQL（保持运行，通常已启用）
+    print_info "检查 MySQL ..."
+    if systemctl is-active mysql >/dev/null 2>&1; then
+        print_success "MySQL 已在运行"
+    else
+        systemctl start mysql 2>/dev/null
+        if systemctl is-active mysql >/dev/null 2>&1; then
+            print_success "MySQL 已启动"
+        else
+            print_warning "MySQL 启动失败，请检查"
+        fi
+    fi
+    echo ""
+    
+    # 2. Ollama 容器
+    print_info "启动 Ollama 容器..."
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${OLLAMA_CONTAINER}$"; then
+        print_success "Ollama 已在运行"
+    elif docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "^${OLLAMA_CONTAINER}$"; then
+        docker start "$OLLAMA_CONTAINER" >/dev/null 2>&1
+        if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${OLLAMA_CONTAINER}$"; then
+            print_success "Ollama 容器已启动"
+        else
+            print_error "Ollama 容器启动失败"
+        fi
+    else
+        print_error "Ollama 容器不存在，请先创建 (docker run -d --name ollama -p 127.0.0.1:11434:11434 -v ollama_data:/root/.ollama ollama/ollama)"
+    fi
+    echo ""
+    
+    # 3. systemd 服务
+    for svc in "${SYSTEMD_SERVICES[@]}"; do
+        print_info "启动 $(svc_label $svc) ..."
+        systemctl start "$svc" 2>/dev/null
+        sleep 1
+        if systemctl is-active "$svc" >/dev/null 2>&1; then
+            print_success "$(svc_label $svc) 已启动"
+        else
+            print_error "$(svc_label $svc) 启动失败"
+        fi
+    done
+    echo ""
+    print_success "全部组件启动完成"
+}
+
+# ========== 停止 ==========
+stop_all() {
+    print_header "🛑 停止 $APP_NAME"
+    echo ""
+    
+    # 先停应用服务（逆序）
+    for ((i=${#SYSTEMD_SERVICES[@]}-1; i>=0; i--)); do
+        local svc="${SYSTEMD_SERVICES[$i]}"
+        print_info "停止 $(svc_label $svc) ..."
+        systemctl stop "$svc" 2>/dev/null
+        if ! systemctl is-active "$svc" >/dev/null 2>&1; then
+            print_success "$(svc_label $svc) 已停止"
+        else
+            print_warning "$(svc_label $svc) 未能停止"
+        fi
+    done
+    echo ""
+    
+    # 停止 Ollama 容器
+    print_info "停止 Ollama 容器..."
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${OLLAMA_CONTAINER}$"; then
+        docker stop "$OLLAMA_CONTAINER" >/dev/null 2>&1
+        if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${OLLAMA_CONTAINER}$"; then
+            print_error "Ollama 容器停止失败"
+        else
+            print_success "Ollama 容器已停止"
+        fi
+    else
+        print_warning "Ollama 未在运行"
+    fi
+    echo ""
+    
+    # MySQL 保持运行（不停止，仅提示）
+    print_info "MySQL 保持运行（不停止数据库）"
+    echo ""
+    print_success "应用服务已全部停止（MySQL 保持运行）"
+}
+
+# ========== 重启 ==========
+restart_all() {
+    print_header "🔄 重启 $APP_NAME"
+    echo ""
+    stop_all
+    echo ""
+    sleep 1
+    start_all
+}
+
+# ========== 状态 ==========
+show_status() {
+    print_header "📊 $APP_NAME 状态"
+    echo ""
+    echo "  ── systemd 服务 ──"
+    for svc in "${SYSTEMD_SERVICES[@]}"; do
+        local label=$(svc_label $svc)
+        local active=$(systemctl is-active "$svc" 2>/dev/null)
+        local enabled=$(systemctl is-enabled "$svc" 2>/dev/null)
+        if [ "$active" = "active" ]; then
+            echo -e "    ${GREEN}✓${NC} $label: ${GREEN}运行中${NC} (自启:$enabled)"
+        else
+            echo -e "    ${RED}✗${NC} $label: ${RED}未运行${NC} (自启:$enabled)"
+        fi
+    done
+    echo ""
+    echo "  ── MySQL ──"
+    if systemctl is-active mysql >/dev/null 2>&1; then
+        echo -e "    ${GREEN}✓${NC} MySQL数据库: ${GREEN}运行中${NC}"
+    else
+        echo -e "    ${RED}✗${NC} MySQL数据库: ${RED}未运行${NC}"
+    fi
+    echo ""
+    echo "  ── Ollama ──"
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${OLLAMA_CONTAINER}$"; then
+        echo -e "    ${GREEN}✓${NC} Ollama容器: ${GREEN}运行中${NC} (端口$OLLAMA_PORT)"
+        local models=$(docker exec "$OLLAMA_CONTAINER" ollama list 2>/dev/null | tail -n +2 | awk '{print $1}' | tr '\n' ', ' | sed 's/, $//')
+        if [ -n "$models" ]; then
+            echo -e "    模型: ${GREEN}$models${NC}"
+        fi
+    else
+        echo -e "    ${RED}✗${NC} Ollama容器: ${RED}未运行${NC}"
+    fi
+    echo ""
+    echo "  ── 端口 ──"
+    if ss -tulpn 2>/dev/null | grep -q ":$FLASK_PORT"; then
+        echo -e "    ${GREEN}✓${NC} $FLASK_PORT (Flask)"
+    else
+        echo -e "    ${RED}✗${NC} $FLASK_PORT (Flask)"
+    fi
+    if ss -tulpn 2>/dev/null | grep -q ":$OLLAMA_PORT"; then
+        echo -e "    ${GREEN}✓${NC} $OLLAMA_PORT (Ollama)"
+    else
+        echo -e "    ${RED}✗${NC} $OLLAMA_PORT (Ollama)"
+    fi
+    echo ""
+    echo "  ── 四级预加载进度 ──"
+    if [ -f /tmp/cet4_preload_status.json ]; then
+        python3 -c "
+import json
+with open('/tmp/cet4_preload_status.json') as f:
+    d = json.load(f)
+cur = d.get('current_word','')
+mem = d.get('mem_percent','')
+if d.get('paused_memory'):
+    print(f'    ${YELLOW}⏸️ 内存保护暂停中 (内存{mem}%)${NC}')
+elif cur:
+    print(f'    ${GREEN}正在生成: {cur}${NC}')
+else:
+    print('    待机中')
+" 2>/dev/null || echo "    (状态文件不可读)"
+    else
+        echo "    (无状态文件)"
+    fi
+    echo ""
+}
+
+# ========== 日志 ==========
+show_logs() {
+    local service="${1:-all}"
+    case "$service" in
+        all)
+            print_header "📄 实时日志 - 所有应用服务 (Ctrl+C 退出)"
+            echo ""
+            journalctl -u exam-system -u exam-generator -u cet4-preload -f --no-pager
+            ;;
+        flask)
+            print_header "📄 实时日志 - Flask服务 (Ctrl+C 退出)"
+            echo ""
+            journalctl -u exam-system -f --no-pager
+            ;;
+        generator)
+            print_header "📄 实时日志 - 题目生成器 (Ctrl+C 退出)"
+            echo ""
+            journalctl -u exam-generator -f --no-pager
+            ;;
+        cet4)
+            print_header "📄 实时日志 - 四级预加载 (Ctrl+C 退出)"
+            echo ""
+            journalctl -u cet4-preload -f --no-pager
+            ;;
+        ollama)
+            print_header "📄 实时日志 - Ollama容器 (Ctrl+C 退出)"
+            echo ""
+            docker logs -f "$OLLAMA_CONTAINER"
+            ;;
+        mysql)
+            print_header "📄 实时日志 - MySQL (Ctrl+C 退出)"
+            echo ""
+            journalctl -u mysql -f --no-pager
+            ;;
+        *)
+            print_error "未知服务: $service"
+            print_info "可用: all, flask, generator, cet4, ollama, mysql"
+            return 1
+            ;;
+    esac
+}
+
+show_help() {
+    cat << EOF2
+${BLUE}════════════════════════════════════════════════════════════${NC}
+  ${GREEN}examctl${NC} - $APP_NAME 统一控制脚本
+
+  ${BLUE}用法:${NC}
+    ./examctl {start|stop|restart|status|logs|help}
+
+  ${BLUE}命令:${NC}
+    start           启动所有组件 (MySQL + Ollama + Flask + 生成器 + 预加载)
+    stop            停止应用组件 (Flask + 生成器 + 预加载 + Ollama；MySQL保持运行)
+    restart         重启所有组件
+    status          查看所有组件状态
+    logs            实时查看所有应用日志
+    logs [服务]     查看指定服务日志 (all|flask|generator|cet4|ollama|mysql)
+    help            显示帮助信息
+
+  ${BLUE}示例:${NC}
+    ./examctl start           # 启动所有组件
+    ./examctl status          # 查看状态
+    ./examctl logs generator  # 只看生成器日志
+    ./examctl restart         # 重启
+
+${BLUE}════════════════════════════════════════════════════════════${NC}
+EOF2
+}
+
+main() {
+    case "$1" in
+        start) start_all ;;
+        stop) stop_all ;;
+        restart) restart_all ;;
+        status) show_status ;;
+        logs) shift; show_logs "$@" ;;
+        help|--help|-h) show_help ;;
+        *)
+            print_error "未知命令: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"
