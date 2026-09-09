@@ -248,8 +248,8 @@ SERVICES = [
     {"id": "menu",     "name": "点餐系统", "desc": "family 点餐 · https://host/menu/",
      "unit": "menu-app.service", "kind": "systemd"},
     # ---- 以下独立进程：仅监控，不开“停止”以安全起见 ----
-    {"id": "openclaw", "name": "OpenClaw 网关", "desc": "Control UI(18789) · WebChat 入口 · 重启请在 SSH 终端执行 openclaw gateway restart",
-     "unit": None, "kind": "proc_monitor", "procs": ["openclaw/dist/index.js gateway"]},
+    {"id": "gateway", "name": "网关服务", "desc": "会话网关(18789) · 入口服务",
+     "unit": None, "kind": "proc_monitor", "procs": ["gateway/dist/index.js"]},
 ]
 
 # 面板里点击“停止/重启”前需要二次确认的危险操作仍走系统确认，这里标记不可控的 kind

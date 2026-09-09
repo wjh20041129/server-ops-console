@@ -12,7 +12,7 @@ DB_PASSWORD=YOUR_DB_PASSWORD
 DB_DATABASE=exam_system
 DB_CHARSET=utf8mb4
 
-# 阿里云百炼API配置（OpenClaw默认使用）
+# 阿里云百炼API配置
 BAILIAN_API_KEY=your_actual_api_key_here
 BAILIAN_BASE_URL=https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
 BAILIAN_MODEL=qwen3.8-flash

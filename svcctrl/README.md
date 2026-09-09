@@ -16,7 +16,7 @@
 - **systemd 服务**(10个)：可 启动/停止/重启 + 设/关 开机自启
   随身笔记(exam-system)、MySQL、Nginx、CET4预加载、code-server、VNC、noVNC、
   filebrowser、Docker、宝塔(BT-Panel)
-- **只读进程监控**(3个)：RustDesk(hbbs/hbbr)、OpenClaw网关(18789)、dsh web(3080)
+- **只读进程监控**(3个)：RustDesk(hbbs/hbbr)、会话网关(18789)、dsh web(3080)
   —— 这些不在面板启停（避免切断自身会话等），仅显示状态/内存。
 
 ## 数据
