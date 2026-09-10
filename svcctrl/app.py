@@ -248,8 +248,8 @@ SERVICES = [
     {"id": "menu",     "name": "点餐系统", "desc": "family 点餐 · https://host/menu/",
      "unit": "menu-app.service", "kind": "systemd"},
     # ---- 以下独立进程：仅监控，不开“停止”以安全起见 ----
-    {"id": "gateway", "name": "网关服务", "desc": "会话网关(18789) · 入口服务",
-     "unit": None, "kind": "proc_monitor", "procs": ["gateway/dist/index.js"]},
+    {"id": "openclaw", "name": "OpenClaw 网关", "desc": "Control UI(18789) · WebChat 入口 · 重启请在 SSH 终端执行 openclaw gateway restart",
+     "unit": None, "kind": "proc_monitor", "procs": ["openclaw/dist/index.js gateway"]},
 ]
 
 # 面板里点击“停止/重启”前需要二次确认的危险操作仍走系统确认，这里标记不可控的 kind
@@ -552,7 +552,7 @@ def api_users_setpassword():
 # API：家庭成员账号管理（family_portal MySQL users 表；仅 owner）
 #   密码格式与 family_portal.app.hash_pw 严格一致：salt$pbkdf2_sha256_120000
 # ---------------------------------------------------------------------------
-FAMILY_DB = dict(host='localhost', user='menu_user', password='YOUR_FAMILY_DB_PASSWORD',
+FAMILY_DB = dict(host='localhost', user='menu_user', password=os.environ.get('FAMILY_DB_PASSWORD', ''),
                  database='family_portal', charset='utf8mb4')
 
 
@@ -794,9 +794,9 @@ DB_CFG_FILE = '/root/svcctrl/db.json'  # 可选：若与 exam 密码不同，可
 
 
 def _mysql_creds():
-    """MySQL 连接凭据。默认 root/YOUR_DB_PASSWORD（与 exam 项目一致，密码明文本地保存）。
+    """MySQL 连接凭据。默认 root/12345678（与 exam 项目一致，密码明文本地保存）。
     可通过 /root/svcctrl/db.json 覆盖：{"host":..,"user":..,"password":..}。"""
-    cfg = {'host': '127.0.0.1', 'user': 'root', 'password': 'YOUR_DB_PASSWORD', 'port': 3306}
+    cfg = {'host': '127.0.0.1', 'user': 'root', 'password': os.environ.get('MYSQL_PASSWORD', ''), 'port': 3306}
     try:
         if os.path.exists(DB_CFG_FILE):
             with open(DB_CFG_FILE) as f:
@@ -1403,13 +1403,15 @@ def api_access_port(port):
     return jsonify({'port': port, 'type': 'web', 'ips': summary})
 
 
-# 可切换模型 → (provider, 通道)。DeepSeek 官方走官方 API；其余走百炼(兼容端点)。
+# 可切换模型 → (provider, 通道)。DeepSeek 官方走官方 API；Volcengine 走火山引擎方舟；其余走百炼(兼容端点)。
 DEEPSEEK_OFFICIAL = {"deepseek-v4-flash"}   # 官方通道(有额度)
+VOLCENGINE_MODELS = ["ark-code-latest"]      # 火山引擎方舟
 BAILIAN_MODELS = ["qwen3.8-flash", "deepseek-v4-flash-0731", "deepseek-v3", "qwen-plus", "qwen-turbo", "deepseek-r1"]
 MODEL_CHOICES = [
     {"id": "deepseek-v4-flash", "provider": "DeepSeek 官方"},
-] + [{"id": m, "provider": "百炼 Bailian"} for m in BAILIAN_MODELS]
-DEFAULT_MODEL = "qwen3.8-flash"   # 用户指定的统一默认(百炼)。⚠️百炼 1周配额 9/13 14:24(北京时间)前会 429,期间 AI 分析不可用
+] + [{"id": m, "provider": "火山引擎 Volcengine"} for m in VOLCENGINE_MODELS] \
+    + [{"id": m, "provider": "百炼 Bailian"} for m in BAILIAN_MODELS]
+DEFAULT_MODEL = "ark-code-latest"   # 用户指定的统一默认(火山引擎 Volcengine 方舟, 已验证可用)
 
 
 def _provider_for(model):
@@ -1417,6 +1419,9 @@ def _provider_for(model):
     if model in DEEPSEEK_OFFICIAL:
         return ("deepseek-official", "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL",
                 "https://api.deepseek.com/v1")
+    if model in VOLCENGINE_MODELS:
+        return ("volcengine", "VOLCENGINE_API_KEY", "VOLCENGINE_BASE_URL",
+                "https://ark.cn-beijing.volces.com/api/plan/v3")
     return ("bailian", "BAILIAN_API_KEY", "BAILIAN_BASE_URL",
             "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1")
 
