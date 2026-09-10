@@ -501,19 +501,19 @@ var confirmText = {}; // 临时确认缓存
    hostless: 经 nginx 同域反代时置 true 则用相对的 /<path>。 */
 var APP_BASE  = location.protocol+"//"+location.hostname; // 面板可达的 IP/域名
 var SVCTRL_APPS = [
-  {name:'随身笔记', icon:'📘', color:'#10b981', svcId:'exam', desc:'exam 学习应用',
+  {name:'随身笔记', iconRaw:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>', color:'#10b981', svcId:'exam', desc:'exam 学习应用',
      url:APP_BASE+'/exam/' },
-  {name:'家人门户', icon:'🏠', color:'#38bdf8', svcId:'family', desc:'注册/云盘/家人入口',
+  {name:'家人门户', iconRaw:'<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>', color:'#38bdf8', svcId:'family', desc:'注册/云盘/家人入口',
      url:APP_BASE+'/family/' },
-  {name:'厨房后台', icon:'👨🍳', color:'#ff8c42', svcId:'menu', desc:'厨师专用 · 收单/管理菜单',
+  {name:'厨房后台', iconRaw:'<path d="M7.5 13a2.5 2.5 0 0 1 2.5-2.5h4A2.5 2.5 0 0 1 17 13v1.5"/><path d="M12 8V3"/><path d="M8 21v-6h8v6"/><path d="M4 21h16"/>', color:'#ff8c42', svcId:'menu', desc:'厨师专用 · 收单/管理菜单',
      url:APP_BASE+'/menu/admin' },
-  {name:'SSH 终端', icon:'🔑', color:'#f43f5e', svcId:'ttyd', desc:'网页命令行',
+  {name:'SSH 终端', iconRaw:'<rect x="2" y="4" width="20" height="16" rx="3"/><path d="M12 8v8"/><path d="M6 12h4"/><path d="M16 12h2"/>', color:'#f43f5e', svcId:'ttyd', desc:'网页命令行',
      url:APP_BASE+'/ssh/' },
-  {name:'文件管理', icon:'🗂️', color:'#38bdf8', svcId:'filebrowser', desc:'filebrowser',
+  {name:'文件管理', iconRaw:'<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M9 13l2 2 4-4"/>', color:'#38bdf8', svcId:'filebrowser', desc:'filebrowser',
      url:APP_BASE+'/fb/' },
-  {name:'网页桌面', icon:'🖥️', color:'#818cf8', svcId:'novnc', desc:'noVNC',
+  {name:'网页桌面', iconRaw:'<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>', color:'#818cf8', svcId:'novnc', desc:'noVNC',
      url:APP_BASE+'/vnc/' },
-  {name:'VS Code',  icon:'💻', color:'#f59e0b', svcId:'codeserver', desc:'code-server',
+  {name:'VS Code',  iconRaw:'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>', color:'#f59e0b', svcId:'codeserver', desc:'code-server',
      url:APP_BASE+'/code/' },
 ];
 
@@ -923,7 +923,7 @@ async function renderApps(){
     }
     rows+='<a class="'+cls+'" href="'+esc(appUrl(a))+'" target="_blank" title="'+esc(a.desc)+'" style="text-decoration:none">'+
       '<span class="st">'+dot+'</span>'+
-      '<span class="ic" style="background:linear-gradient(135deg,'+esc(a.color)+'55,color-mix(in srgb,'+esc(a.color)+' 70%,#0b1120))">'+esc(a.icon)+'</span>'+
+      '<span class="ic" style="background:linear-gradient(135deg,'+esc(a.color)+'55,color-mix(in srgb,'+esc(a.color)+' 70%,#0b1120))"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ (a.iconRaw||'') +'</svg></span>'+
       '<span class="nm">'+esc(a.name)+'</span>'+
       '<span class="ds">'+esc(a.desc)+'</span></a>';
   });
@@ -972,7 +972,7 @@ async function aiAnalyze(ip, selEl, outEl, btn, force){
       else { outEl.innerHTML='<div class="err">分析失败：'+escIP(r.error||'未知')+'</div>'; }
     }
   }catch(e){ if(outEl) outEl.innerHTML='<div class="err">请求失败：'+escIP(e.message||e)+'</div>'; }
-  finally{ if(btn){ btn.disabled=false; btn.textContent='🤖 AI 分析'; } }
+  finally{ if(btn){ btn.disabled=false; btn.textContent='AI 分析'; } }
 }
 
 var AI_CACHE={};   /* ip -> {text,model,ts} 复用; 只有点“重新分析”才覆盖 */
@@ -993,9 +993,9 @@ async function loadAccessIps(port){
     var web=0, ssh=0; list.forEach(function(x){ web+=x.web||0; ssh+=x.ssh||0; });
     if(st){
       if(isPort) st.textContent = isSsh
-        ? ('🔒 SSH(22) · 共 '+list.length+' 个外网 IP · 攻击事件 '+ssh+'（最近24h）')
-        : ('🌐 端口 '+port+' · 共 '+list.length+' 个外网 IP · web '+web+'（最近24h）');
-      else st.textContent='共 '+list.length+' 个外网 IP · web '+web+' · ssh '+ssh+'（最近24h）· 点击行看明细 / 🤖AI分析';
+        ? ('SSH(22) · 共 '+list.length+' 个外网 IP · 攻击事件 '+ssh+'（最近24h）')
+        : ('端口 '+port+' · 共 '+list.length+' 个外网 IP · web '+web+'（最近24h）');
+      else st.textContent='共 '+list.length+' 个外网 IP · web '+web+' · ssh '+ssh+'（最近24h）· 点击行看明细 / AI分析';
     }
     if(!list.length){ box.innerHTML='<div class="err" style="color:#94a3b8">'+ (isSsh?'此端口最近无SSH攻击':isPort?'此端口最近无访问':'最近无外网访问') +'</div>'; return; }
     var rows=list.map(function(x){
@@ -1004,8 +1004,8 @@ async function loadAccessIps(port){
         '<div class="iph"><span class="url">'+escIP(x.ip)+'</span>'+
         '<span class="webn">web '+x.web+'</span>'+sshBadge+
         '<select class="mselect" data-model title="分析模型">'+modelOpts(AI_MODEL_DEFAULT)+'</select>'+
-        '<button class="btn ai-btn" data-ai="1">🤖 AI 分析</button>'+
-        '<button class="btn blk" data-blk="1">⚫ 拉黑</button>'+
+        '<button class="btn ai-btn" data-ai="1">AI 分析</button>'+
+        '<button class="btn blk" data-blk="1">拉黑</button>'+
         '<span class="ua">'+escIP(shortUA(x.ua))+'</span>'+
         '<span class="last">'+escIP(x.last||'')+'</span>'+
         '<span class="toggle">▸</span></div>'+
@@ -1039,18 +1039,17 @@ async function loadAccessIps(port){
       if(t) t.textContent='▾';
       _ipExpanded[ip]=true;
     });
-    // 按黑名单状态标记行(红/⛔/按钮文案)
+    // 按黑名单状态标记行(红/已拉黑/按钮文案)
     [].slice.call(box.children||[]).forEach(function(row){
       var ip=row.getAttribute('data-ip');
       var isBlk = IP_BLOCKED && IP_BLOCKED.has(ip);
       var bk=row.querySelector('.blk');
       if(isBlk){
         row.classList.add('blkrow');
-        var url=row.querySelector('.url'); if(url) url.innerHTML='⛔ '+url.innerHTML;
         if(bk) bk.textContent='解除拉黑';
       } else {
         row.classList.remove('blkrow');
-        if(bk) bk.textContent='⚫ 拉黑';
+        if(bk) bk.textContent='拉黑';
       }
     });
   }catch(e){ box.innerHTML='<div class="err">IP 数据加载失败：'+escIP(e.message||e)+'</div>'; }
@@ -1058,7 +1057,7 @@ async function loadAccessIps(port){
 /* 端口按钮栏：全部=全视图, 其余为具体端口。点击切换 loadAccessIps(port)。 */
 var CUR_PORT = '';
 function renderPortBar(active){
-  var ports=[['','全部'],['22','🔒 22'],['443','🌐 443'],['8443','🌐 8443'],['80','🔗 80'],['8444','🔗 8444']];
+  var ports=[['','全部'],['22','22'],['443','443'],['8443','8443'],['80','80'],['8444','8444']];
   CUR_PORT = active || '';
   return '<div class="portbar">'+ports.map(function(p){
     var on = (CUR_PORT===p[0])?' on':'';
