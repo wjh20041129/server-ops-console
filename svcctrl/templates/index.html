@@ -230,6 +230,8 @@ a{color:#38bdf8;text-decoration:none}
 .iprow .blk{font-size:12px;padding:3px 9px;border-radius:7px;border:none;background:#334155;color:#f1f5f9;cursor:pointer;white-space:nowrap}
 .iprow .blk:hover{background:#475569}
 .iprow.blkrow{background:#3a1620;border-color:#a33}
+.iprow.hr{border-color:#dc2626;box-shadow:inset 3px 0 0 #dc2626}
+.iprow.hr .url{color:#f87171;font-weight:600}
 .iprow.blkrow .blk{background:#b91c1c;color:#fff}
 .iprow .blk:disabled{opacity:.5;cursor:wait}
 
@@ -463,6 +465,17 @@ body{
     </h2>
     <div style="font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.6">
       <span id="ipStat">—</span>
+    </div>
+    <div id="ipToolbar" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px;padding:10px 12px;background:#0d1526;border:1px solid #1e293b;border-radius:10px">
+      <span style="font-size:12px;color:#94a3b8">当前连接 <b id="curConnIp" style="color:#38bdf8">—</b></span>
+      <label style="font-size:12px;color:#94a3b8">日期
+        <select id="ipHistDate" style="margin-left:4px;font-size:12px;background:#0f1729;color:#e2e8f0;border:1px solid #1e293b;border-radius:6px;padding:4px 6px"></select>
+      </label>
+      <label style="font-size:12px;color:#94a3b8;display:flex;align-items:center;gap:5px;cursor:pointer">高风险
+        <input type="checkbox" id="hrOnly" style="cursor:pointer">
+      </label>
+      <button class="btn btn-sm btn-danger" id="blkBulk" style="display:none">批量封禁高风险 <span id="blkBulkN">0</span></button>
+      <button class="btn btn-sm btn-ghost" id="histBack" onclick="exitHistMode()" style="display:none">返回实时视图</button>
     </div>
     <div style="margin-bottom:10px" id="portBar"><!-- 端口按钮注入 --></div>
     <div id="ipList">
@@ -980,6 +993,69 @@ function aiCacheGet(ip){ try{ var c=localStorage.getItem('ipAiCache'); var m=(c?
 function aiCacheSet(ip,text,model){ if(!AI_CACHE){} try{ var c={}; try{ c=JSON.parse(localStorage.getItem('ipAiCache')||'{}'); }catch(e2){} c[ip]={text:text,model:model,ts:Date.now()}; var keys=Object.keys(c); if(keys.length>300){ var old=keys.sort(function(a,b){return (c[a].ts||0)-(c[b].ts||0);}); while(old.length>300) delete c[old.shift()]; } localStorage.setItem('ipAiCache',JSON.stringify(c)); }catch(e){} }
 var IP_BLOCKED=new Set();
 async function refreshBlocks(){ try{ var z=await api('/api/access/blocklist'); IP_BLOCKED=new Set(z.blocked||[]); }catch(e){} }
+
+/* ---------- IP 历史：日期 / 高风险筛选 / 批量封禁 ---------- */
+var HIST_STATE = { date: todayStr(), highrisk: false };
+function todayStr(){ var t=new Date(); return t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2); }
+// 返回当前视图：live=实时；hist/hr=历史日期(可能带highrisk)。highrisk 与日期正交：筛选所选日期的全部高风险。
+function HISTORY_MODE(){
+  var pDate = HIST_STATE.date && HIST_STATE.date!==todayStr();
+  if(HIST_STATE.highrisk || pDate) return {view:'hist', date:HIST_STATE.date||todayStr(), highrisk:!!HIST_STATE.highrisk};
+  return {view:'live', date:todayStr(), highrisk:false};
+}
+
+async function initHistTools(){
+  // 加载日期下拉 + 当前连接IP
+  try{
+    var d=await api('/api/access/dates');
+    var sel=document.getElementById('ipHistDate'); if(sel && d.dates && d.dates.length){
+      sel.innerHTML='<option value="'+todayStr()+'">今天</option>'+d.dates.map(function(x){return x===todayStr()?'':'<option value="'+escIP(x)+'">'+escIP(x)+'</option>';}).join('');
+      sel.value=todayStr();
+    }
+  }catch(e){}
+  try{
+    var c=await api('/api/access/current-ip');
+    var el=document.getElementById('curConnIp'); if(el && c.ip) el.textContent=c.ip;
+  }catch(e){}
+}
+function exitHistMode(){
+  HIST_STATE.date=todayStr(); HIST_STATE.highrisk=false;
+  var s=document.getElementById('ipHistDate'); if(s) s.value=todayStr();
+  var h=document.getElementById('hrOnly'); if(h) h.checked=false;
+  document.getElementById('histBack').style.display='none';
+  refreshBlkBulkBtn();
+  loadAccessIps(CUR_PORT);
+}
+function refreshBlkBulkBtn(){
+  var btn=document.getElementById('blkBulk'); if(!btn) return;
+  if(HIST_STATE.highrisk || HIST_STATE.date!==todayStr()){
+    // 显示批量封禁按钮（在highrisk视图下可用；普通日期视图也可批量封该日全部高风险）
+    var n=(window._curHistHRCount!=null)? window._curHistHRCount : 0;
+    btn.style.display='';
+    document.getElementById('blkBulkN').textContent=n;
+  } else btn.style.display='none';
+}
+async function doBlkBulk(){
+  var mode=HISTORY_MODE();
+  var d = await api('/api/access/history?date='+encodeURIComponent(mode.date)+'&highrisk=1');
+  var risky=(d.ips||[]).map(function(x){return x.ip;});
+  var cur=((await api('/api/access/current-ip')).ip)||'';
+  var eff=risky.filter(function(ip){return ip!==cur;});
+  if(!eff.length){ toast('✓ 当前无高风险IP需封禁'); return; }
+  var tip='将封禁 <b>'+eff.length+'</b> 个高风险IP（web/ssh）：<br>'+eff.slice(0,20).map(escIP).join('、')+(eff.length>20?(' 等 '+eff.length+' 个'):'')+'<br><span style="color:#f59e0b">当前连接IP(如果高风险)已自动排除</span>';
+  askConfirm({tone:'danger', okText:'确认封禁', title:'批量封禁高风险IP', text:tip}).then(async function(yes){
+    if(!yes) return;
+    var btn=document.getElementById('blkBulk'); if(btn) btn.disabled=true;
+    try{
+      var r=await api('/api/access/block-bulk',{method:'POST',body:JSON.stringify({ips:eff})});
+      toast('✓ 已封禁 '+((r.blocked||[]).length)+' 个，跳过 '+((r.skipped||[]).length)+' 个，失败 '+((r.failed||[]).length)+' 个');
+      await refreshBlocks();
+      loadAccessIps(CUR_PORT);
+    }catch(e){ toast('✗ 封禁失败：'+(e.message||e)); }
+    if(btn) btn.disabled=false;
+  });
+}
+
 async function loadAccessIps(port){
   var box=document.getElementById('ipList'); var st=document.getElementById('ipStat');
   if(!box) return;
@@ -987,27 +1063,45 @@ async function loadAccessIps(port){
     try{ await refreshBlocks(); }catch(e){}
     try{ var mv=await api('/api/access/models'); if(mv&&mv.models&&mv.models.length){ AI_MODELS=mv.models; AI_MODEL_DEFAULT=mv.default||AI_MODELS[0]; } }catch(e){}
     var isPort = !!port;
-    var d = isPort ? await api('/api/access/port/'+encodeURIComponent(port)) : await api('/api/access/ip');
+    var hist = HISTORY_MODE();
+    var d, isSsh=false;
+    if(hist.view==='hist'){
+      // 历史日期 / 高风险筛选：走存档接口
+      d = await api('/api/access/history?date='+encodeURIComponent(hist.date)+(hist.highrisk?'&highrisk=1':''));
+    } else if(hist.view==='hr'){
+      d = await api('/api/access/history?date='+encodeURIComponent(todayStr())+'&highrisk=1');
+    } else {
+      isSsh = port==='22';
+      d = isPort ? await api('/api/access/port/'+encodeURIComponent(port)) : await api('/api/access/ip');
+    }
     var list=d.ips||[];
-    var isSsh = d.type==='ssh';
+    // 批量封禁按钮计数：非实时视图下 = 当前列表中的高风险行数
+    window._curHistHRCount = (hist.view!=='live') ? list.filter(function(x){return x.high_risk;}).length : 0;
     var web=0, ssh=0; list.forEach(function(x){ web+=x.web||0; ssh+=x.ssh||0; });
     if(st){
-      if(isPort) st.textContent = isSsh
+      var labelDate = hist.view!=='live' ? ('（'+hist.date+'）') : '';
+      if(hist.view!=='live'){
+        var hr = hist.highrisk?' · 高风险筛选 ':'· 按日期存档';
+        st.textContent='共 '+list.length+' 个外网 IP · web '+web+' · ssh '+ssh+labelDate+hr;
+      } else if(isPort) st.textContent = isSsh
         ? ('SSH(22) · 共 '+list.length+' 个外网 IP · 攻击事件 '+ssh+'（最近24h）')
         : ('端口 '+port+' · 共 '+list.length+' 个外网 IP · web '+web+'（最近24h）');
       else st.textContent='共 '+list.length+' 个外网 IP · web '+web+' · ssh '+ssh+'（最近24h）· 点击行看明细 / AI分析';
     }
-    if(!list.length){ box.innerHTML='<div class="err" style="color:#94a3b8">'+ (isSsh?'此端口最近无SSH攻击':isPort?'此端口最近无访问':'最近无外网访问') +'</div>'; return; }
+    if(!list.length){ box.innerHTML='<div class="err" style="color:#94a3b8">'+ (hist.view!=='live'?'所选日期无存档数据（或该日无外网访问）':isSsh?'此端口最近无SSH攻击':isPort?'此端口最近无访问':'最近无外网访问') +'</div>'; return; }
     var rows=list.map(function(x){
-      var sshBadge = x.ssh? '<span class="mm" style="background:'+(x.ssh_kinds&&x.ssh_kinds.indexOf('failed')>=0?'#ef4444':'#f59e0b')+'">ssh×'+x.ssh+'</span>':'';
-      return '<div class="iprow" data-ip="'+escIP(x.ip)+'">'+
-        '<div class="iph"><span class="url">'+escIP(x.ip)+'</span>'+
-        '<span class="webn">web '+x.web+'</span>'+sshBadge+
+      var sshBadge = (x.ssh||0)? '<span class="mm" style="background:'+((x.ssh_kinds&&x.ssh_kinds.indexOf('failed')>=0)||x.ssh_fail?'#ef4444':'#f59e0b')+'">ssh×'+(x.ssh||0)+'</span>':' ';
+      var hrBadge = x.high_risk ? '<span class="mm" style="background:#dc2626;color:#fff">高风险</span>' : '';
+      var tagPorts = (x.ports&&x.ports.length)? '<span class="webn">端口 '+x.ports.join(',')+'</span>':'<span class="webn">web '+(x.web||0)+'</span>';
+      var hrCls = x.high_risk?' hr':' ';
+      return '<div class="iprow" data-ip="'+escIP(x.ip)+'"'+(x.high_risk?' data-hr="1"':'')+'>'+
+        '<div class="iph">'+hrBadge+'<span class="url">'+escIP(x.ip)+'</span>'+
+        tagPorts+sshBadge+
         '<select class="mselect" data-model title="分析模型">'+modelOpts(AI_MODEL_DEFAULT)+'</select>'+
         '<button class="btn ai-btn" data-ai="1">AI 分析</button>'+
         '<button class="btn blk" data-blk="1">拉黑</button>'+
         '<span class="ua">'+escIP(shortUA(x.ua))+'</span>'+
-        '<span class="last">'+escIP(x.last||'')+'</span>'+
+        '<span class="last">'+escIP(x.last_ts||x.last||'')+'</span>'+
         '<span class="toggle">▸</span></div>'+
         '<div class="ipd"></div></div>';
     }).join('');
@@ -1052,6 +1146,7 @@ async function loadAccessIps(port){
         if(bk) bk.textContent='拉黑';
       }
     });
+    refreshBlkBulkBtn();
   }catch(e){ box.innerHTML='<div class="err">IP 数据加载失败：'+escIP(e.message||e)+'</div>'; }
 }
 /* 端口按钮栏：全部=全视图, 其余为具体端口。点击切换 loadAccessIps(port)。 */
@@ -1320,14 +1415,29 @@ setInterval(linkPing, 5000); linkPing();
 document.addEventListener('visibilitychange', function(){
   if(!document.hidden){ LINK.fails=0; linkPing(); }
 });
-function loadAll(){ loadSystem(); loadServices(); renderApps(); initPortBar(); loadAccessIps(CUR_PORT); }
+function loadAll(){ loadSystem(); loadServices(); renderApps(); initPortBar(); initIpTools(); loadAccessIps(CUR_PORT); }
+
+function initIpTools(){
+  var ds=document.getElementById('ipHistDate');
+  if(ds) ds.onchange=function(){ HIST_STATE.date=ds.value||todayStr(); HIST_STATE.highrisk=false;
+    var h=document.getElementById('hrOnly'); if(h) h.checked=false;
+    var back=document.getElementById('histBack'); if(back) back.style.display=(HIST_STATE.date===todayStr()?'none':'');
+    refreshBlkBulkBtn(); loadAccessIps(CUR_PORT); };
+  var hr=document.getElementById('hrOnly');
+  if(hr) hr.onchange=function(){ HIST_STATE.highrisk=hr.checked;
+    var back=document.getElementById('histBack'); if(back) back.style.display=(HIST_STATE.highrisk?'':'none');
+    refreshBlkBulkBtn(); loadAccessIps(CUR_PORT); };
+  var bb=document.getElementById('blkBulk');
+  if(bb) bb.onclick=doBlkBulk;
+  initHistTools();
+}
 function spinRefreshBtn(){ var rb=document.getElementById('refreshAll'); if(!rb)return; rb.classList.remove('spin'); void rb.offsetWidth; rb.classList.add('spin'); setTimeout(function(){rb.classList.remove('spin');},650); }
 function startPolling(){
   loadAll();
   histInit();
   sysTimer=setInterval(loadSystem, 1500);
   svcTimer=setInterval(function(){ loadServices(); loadMysql(); renderApps(); }, 5000);
-  setInterval(function(){ loadAccessIps(CUR_PORT); }, 15000);   // IP 面板每 15s 刷新
+  setInterval(function(){ if(HISTORY_MODE().view==='live') loadAccessIps(CUR_PORT); }, 15000);   // IP 面板每 15s 刷新(仅实时视图)
 }
 startPolling();
 /* 主题已锁定为深色模式：移除白昼切换，永远使用深色（防止白字看不见）。 */

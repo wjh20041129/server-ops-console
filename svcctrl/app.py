@@ -30,6 +30,9 @@ app = Flask(__name__)
 # atop 历史负载查询（历史时刻表盘）
 from atop_api import atop_bp
 app.register_blueprint(atop_bp)
+
+# IP 历史落库 + 高风险判定（独立模块，含 SQLite/采集/规则）
+import ip_history
 # 会话密钥：持久化到 session.key(root 600)，使登录态跨服务重启存活
 # （以前随机密钥导致每次发版重启，所有在线用户被踢回登录页，表现为"莫名断连"）
 _KEY_FILE = os.path.join(BASE, 'session.key')
@@ -1579,6 +1582,73 @@ def api_access_unblock():
         b = _load_block(); b.discard(ip); _save_block(b)
         return jsonify({'ok': True, 'unblocked': ip})
     return jsonify({'error': 'ufw: ' + msg.strip()}), 500
+
+
+# ============ IP 历史存档（按日期查看 / 高风险筛选 / 批量封禁）============
+
+@app.route('/api/access/history')
+def api_access_history():
+    """按日期返回 IP 聚合列表。?date=YYYY-MM-DD（默认今天）&highrisk=1 只返回高风险。"""
+    if not session.get('authed'):
+        return jsonify({'error': '未登录'}), 401
+    day = (request.args.get('date') or '').strip()
+    if not day:
+        day = datetime.now().strftime('%Y-%m-%d')
+    highrisk = request.args.get('highrisk') in ('1', 'true', 'yes')
+    try:
+        rows = ip_history.query_day(day, highrisk_only=highrisk)
+    except Exception as e:
+        return jsonify({'error': '查询失败: %s' % e}), 500
+    return jsonify({'date': day, 'highrisk': highrisk, 'ips': rows})
+
+
+@app.route('/api/access/dates')
+def api_access_dates():
+    """返回有数据的日期列表（降序），供日期下拉使用。"""
+    if not session.get('authed'):
+        return jsonify({'error': '未登录'}), 401
+    try:
+        dates = ip_history.list_dates()
+    except Exception as e:
+        dates = []
+    return jsonify({'dates': dates})
+
+
+@app.route('/api/access/current-ip')
+def api_access_current_ip():
+    """返回当前登录/连接来源的外网 IP，供前端实时显示并用于批量封禁自锁保护。"""
+    if not session.get('authed'):
+        return jsonify({'error': '未登录'}), 401
+    return jsonify({'ip': _client_ip()})
+
+
+@app.route('/api/access/block-bulk', methods=['POST'])
+def api_access_block_bulk():
+    """批量封禁。body: {ips:[...]}。自动排除当前连接 IP（防自锁）。逐条调用 ufw，返回每条结果。"""
+    if not session.get('authed'):
+        return jsonify({'error': '未登录'}), 401
+    data = request.get_json(silent=True) or {}
+    ips = data.get('ips') or []
+    if not isinstance(ips, list) or not ips:
+        return jsonify({'error': '未提供要封禁的 IP 列表'}), 400
+    me = _client_ip()
+    ok_list, skip_list, fail_list = [], [], []
+    for raw in ips:
+        ip = (str(raw) or '').strip()
+        if not _is_external(ip):
+            fail_list.append({'ip': ip, 'error': '非法外网IP'})
+            continue
+        if me and ip == me:
+            skip_list.append({'ip': ip, 'error': '当前连接IP，已自动跳过'})
+            continue
+        ok, msg = _ufw_deny(ip, True)
+        if ok:
+            b = _load_block(); b.add(ip); _save_block(b)
+            ok_list.append({'ip': ip})
+        else:
+            fail_list.append({'ip': ip, 'error': 'ufw: ' + msg.strip()})
+    return jsonify({'ok': True, 'blocked': ok_list, 'skipped': skip_list,
+                    'failed': fail_list})
 
 
 if __name__ == '__main__':

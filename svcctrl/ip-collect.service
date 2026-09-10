@@ -1,0 +1,10 @@
+[Unit]
+Description=svcctrl IP history collector (per-run ingest)
+After=network.target nginx.service svcctrl.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/svcctrl
+ExecStart=/usr/bin/python3 /root/svcctrl/collect_ip_history.py
+Nice=10
+CPUSchedulingPolicy=idle

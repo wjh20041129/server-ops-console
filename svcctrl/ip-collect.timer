@@ -1,0 +1,11 @@
+[Unit]
+Description=Run svcctrl IP history collector every 10 min
+Requires=ip-collect.service
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+Unit=ip-collect.service
+
+[Install]
+WantedBy=timers.target

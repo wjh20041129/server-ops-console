@@ -1,0 +1,9 @@
+[Unit]
+Description=svcctrl IP history daily backfill + prune
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/svcctrl
+ExecStart=/usr/bin/python3 /root/svcctrl/collect_ip_history.py --backfill
+Nice=10
+CPUSchedulingPolicy=idle

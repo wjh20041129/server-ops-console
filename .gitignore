@@ -48,5 +48,6 @@ img/
 .vscode/
 .idea/
 .DS_Store
-Thumbs.dbsvcctrl/blocklist.json
+Thumbs.db
+svcctrl/blocklist.json
 blocklist.json

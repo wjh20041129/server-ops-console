@@ -1,0 +1,11 @@
+[Unit]
+Description=Run svcctrl IP history backfill+prune daily at 00:10
+Requires=ip-backfill.service
+
+[Timer]
+OnCalendar=*-*-* 00:10:00
+Persistent=true
+Unit=ip-backfill.service
+
+[Install]
+WantedBy=timers.target

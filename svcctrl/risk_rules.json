@@ -1,0 +1,8 @@
+{
+  "ssh_fail": 5,
+  "scan_any": 1,
+  "n404": 20,
+  "ports": 3,
+  "ever_blocked": 1,
+  "_comment": "高风险判定：5 个维度 OR，任一命中即高风险。ssh_fail=单日SSH失败≥N次; scan_any=命中任意扫描路径≥N次; n404=单日404≥N次; ports=触及≥N个不同端口; ever_blocked=曾被拉黑≥N次"
+}
