@@ -204,7 +204,9 @@ a{color:#38bdf8;text-decoration:none}
 .portbtn:hover{border-color:#38bdf8;color:#38bdf8}
 .portbtn.on{background:#0ea5e9;border-color:#0ea5e9;color:#fff;font-weight:600}
 .iprow{background:#0f1729;border:1px solid #1e293b;border-radius:10px;margin-bottom:8px;overflow:hidden}
-.iph{display:flex;align-items:center;gap:12px;padding:9px 13px;cursor:pointer;flex-wrap:wrap;color:#cbd5e1}
+.iph{display:flex;flex-direction:row;align-items:center;gap:12px;padding:9px 13px;cursor:pointer;color:#cbd5e1}
+.iph-main{display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex:1;min-width:0}
+.iph-act{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .iph:hover{background:#111d33}
 .iph .url{font-family:ui-monospace,monospace;font-weight:700;color:#7dd3fc;font-size:14px}
 .iph .webn{font-size:12px;color:#64748b}
@@ -271,6 +273,101 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .app-tile .ic{transition:transform .18s}
 .app-tile:hover .ic{transform:scale(1.08) rotate(-3deg)}
 @media (prefers-reduced-motion:reduce){*,*::before{animation:none!important;transition:none!important}}
+
+/* ============================================================
+   移动端适配 (iPhone 等窄屏) —— 优雅简洁、不丢任何功能
+   断点: ≤900px 平板/横屏手机; ≤640px 手机
+   桌面端 (>900px) 完全不受影响。
+   ============================================================ */
+@media (max-width:900px){
+  .wrap{padding:14px;gap:16px}
+  .panel{padding:16px;border-radius:14px}
+  .svc-grid{grid-template-columns:1fr}
+  .gauges{grid-template-columns:repeat(3,1fr);gap:10px}
+  .sysfast{grid-template-columns:repeat(2,1fr)}
+  .topbar{padding:12px 14px}
+}
+
+@media (max-width:640px){
+  /* --- 全局节奏收紧 --- */
+  .wrap{padding:10px;gap:12px}
+  .panel{padding:13px;border-radius:12px}
+  .panel h2{font-size:15px;gap:8px;display:flex;align-items:center;flex-wrap:wrap}
+  .panel h2 span[style]{font-size:10px!important}
+
+  /* --- 顶栏：三段纵向堆叠，按钮 2×2 --- */
+  .topbar{padding:9px 12px;gap:7px;flex-direction:column;align-items:stretch}
+  .topbar .logo{font-size:16px}
+  .topbar .dbstatus{font-size:11px;gap:8px}
+  .topright{margin-left:0;display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+  .topright .btn{width:100%;justify-content:center;padding:8px 8px;font-size:12px}
+
+  /* --- 表盘：3 列紧凑 --- */
+  .gauges{grid-template-columns:repeat(3,1fr);gap:8px}
+  .gauge{padding:10px 4px;border-radius:10px}
+  .gauge svg{width:74px;height:74px}
+  .gauge .spark{width:64px}
+  .gauge .g-name{font-size:11px;margin-top:5px}
+  .gauge .g-detail{font-size:10px}
+  .sysfast{grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+  .sysfast .f{padding:8px 10px}
+  .sysfast .f .v{font-size:13px}
+
+  /* --- 服务卡片 --- */
+  .svc-grid{gap:10px}
+  .app-tile{padding:12px!important}
+
+  /* --- 端口栏：可横向滑动，不换行堆积 --- */
+  .portbar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
+  .portbar::-webkit-scrollbar{display:none}
+  .portbtn{flex:0 0 auto;padding:6px 16px;font-size:12px}
+
+  /* --- IP 工具栏：纵向堆叠，控件铺满 --- */
+  #ipToolbar{flex-direction:column;align-items:stretch;gap:9px;padding:10px}
+  #ipToolbar>span,#ipToolbar>label{display:flex;align-items:center;justify-content:space-between;width:100%;font-size:12px}
+  #ipToolbar select{flex:1;margin-left:8px!important}
+  #ipToolbar .btn{width:100%;justify-content:center}
+  #ipToolbar label[style*="display:flex"]{justify-content:flex-start;gap:8px}
+
+  /* --- 核心：IP 行重排为清晰的卡片式多行 ---
+     行1: [徽章] IP .... 时间 箭头
+     行2: 端口443 · web 1872 · ssh×0
+     行3: [模型▾] [AI分析] [拉黑] 按钮铺满整行 */
+  .iph{flex-direction:column;align-items:stretch;gap:9px;padding:11px 12px}
+  .iph-main{gap:7px 9px}
+  .iph-main .url{font-size:15px;word-break:break-all}
+  .iph-main .ua{display:none}          /* UA 收起，明细里可看 */
+  .iph-main .last{margin-left:auto;font-size:10px;color:#64748b}
+  .iph-main .toggle{font-size:16px;padding:2px 6px}
+  .iph-act{width:100%;gap:8px}
+  .iph-act .mselect{flex:1 1 auto;min-width:0;font-size:12px;padding:7px 8px}
+  .iph-act .ai-btn,.iph-act .blk{flex:1 1 auto;padding:8px 10px;font-size:12px;text-align:center}
+
+  /* --- IP 明细表格：横向可滑，字号收紧 --- */
+  .ipd{padding:10px;max-height:70vh}
+  .access-t{font-size:11px}
+  .access-t th,.access-t td{padding:3px 6px}
+  .access-t td{word-break:break-all}
+  .sub2{font-size:11px}
+
+  /* --- 日志抽屉：全屏宽 --- */
+  #logBox{width:100vw;min-width:0;max-width:100vw}
+
+  /* --- 弹窗 --- */
+  .modal-confirm{padding:18px;max-width:92vw}
+  .hist-pp .box{max-width:94vw}
+
+  /* --- 历史时刻表盘工具栏 --- */
+  .hist-toolbar{gap:8px}
+  .hist-select{flex:1;min-width:0}
+}
+
+/* 超窄屏(≤380px, 如 iPhone SE/旧机型)再收一档 */
+@media (max-width:380px){
+  .gauges{grid-template-columns:repeat(2,1fr)}
+  .gauges .gauge:last-child{grid-column:span 2}
+  .sysfast{grid-template-columns:1fr 1fr}
+}
 
 /* ====== 塔科夫实验室增强层 (冷灰金属 + 荧光绿/冷青 · 克制) ====== */
 body{
@@ -1094,15 +1191,19 @@ async function loadAccessIps(port){
       var hrBadge = x.high_risk ? '<span class="mm" style="background:#dc2626;color:#fff">高风险</span>' : '';
       var tagPorts = (x.ports&&x.ports.length)? '<span class="webn">端口 '+x.ports.join(',')+'</span>':'<span class="webn">web '+(x.web||0)+'</span>';
       var hrCls = x.high_risk?' hr':' ';
+      var rawLast = x.last_ts || x.last || '';
+      // 短时间：从 "11/Sep/2026:05:31:22 +0800" 取 HH:MM（在日期冒号之后）
+      var mLast = /\d{4}:(\d{2}:\d{2}):\d{2}/.exec(rawLast) || /(\d{2}:\d{2}:\d{2})/.exec(rawLast);
+      var shortLast = mLast ? (mLast[1] || mLast[0]) : rawLast.replace(/^\S+\s+/,'').slice(0,16);
       return '<div class="iprow" data-ip="'+escIP(x.ip)+'"'+(x.high_risk?' data-hr="1"':'')+'>'+
-        '<div class="iph">'+hrBadge+'<span class="url">'+escIP(x.ip)+'</span>'+
-        tagPorts+sshBadge+
-        '<select class="mselect" data-model title="分析模型">'+modelOpts(AI_MODEL_DEFAULT)+'</select>'+
-        '<button class="btn ai-btn" data-ai="1">AI 分析</button>'+
-        '<button class="btn blk" data-blk="1">拉黑</button>'+
-        '<span class="ua">'+escIP(shortUA(x.ua))+'</span>'+
-        '<span class="last">'+escIP(x.last_ts||x.last||'')+'</span>'+
-        '<span class="toggle">▸</span></div>'+
+        '<div class="iph">'+
+          '<div class="iph-main">'+hrBadge+'<span class="url">'+escIP(x.ip)+'</span>'+tagPorts+sshBadge+'<span class="ua">'+escIP(shortUA(x.ua))+'</span><span class="last" title="'+escIP(rawLast)+'">'+escIP(shortLast)+'</span><span class="toggle">▸</span></div>'+
+          '<div class="iph-act">'+
+            '<select class="mselect" data-model title="分析模型">'+modelOpts(AI_MODEL_DEFAULT)+'</select>'+
+            '<button class="btn ai-btn" data-ai="1">AI 分析</button>'+
+            '<button class="btn blk" data-blk="1">拉黑</button>'+
+          '</div>'+
+        '</div>'+
         '<div class="ipd"></div></div>';
     }).join('');
     /* 快照当前展开中的内容(含AI结果)以备刷新后恢复 */
