@@ -803,7 +803,7 @@ DB_CFG_FILE = '/root/svcctrl/db.json'  # 可选：若与 exam 密码不同，可
 
 
 def _mysql_creds():
-    """MySQL 连接凭据。默认 root/12345678（与 exam 项目一致，密码明文本地保存）。
+    """MySQL 连接凭据。密码从环境变量 MYSQL_PASSWORD 读取（本地存于 systemd EnvironmentFile，不入库）。
     可通过 /root/svcctrl/db.json 覆盖：{"host":..,"user":..,"password":..}。"""
     cfg = {'host': '127.0.0.1', 'user': 'root', 'password': os.environ.get('MYSQL_PASSWORD', ''), 'port': 3306}
     try:
