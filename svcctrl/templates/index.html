@@ -1255,8 +1255,13 @@ async function loadAccessIps(port){
   var box=document.getElementById('ipList'); var st=document.getElementById('ipStat');
   if(!box) return;
   try{
-    try{ await refreshBlocks(); }catch(e){}
-    try{ var mv=await api('/api/access/models'); if(mv&&mv.models&&mv.models.length){ AI_MODELS=mv.models; AI_MODEL_DEFAULT=mv.default||AI_MODELS[0]; } }catch(e){}
+    // 优化：blocklist / models 变化很慢，不必每次刷新（每 15s×3 次请求）。首次或超过 2 分钟才拉。
+    var now=Date.now();
+    if(!window._metaTs || now-window._metaTs>120000){
+      window._metaTs=now;
+      try{ await refreshBlocks(); }catch(e){}
+      try{ var mv=await api('/api/access/models'); if(mv&&mv.models&&mv.models.length){ AI_MODELS=mv.models; AI_MODEL_DEFAULT=mv.default||AI_MODELS[0]; } }catch(e){}
+    }
     var isPort = !!port;
     var hist = HISTORY_MODE();
     var d, isSsh=false;
@@ -1632,11 +1637,10 @@ async function linkPing(){
     }
   }
 }
-setInterval(linkPing, 5000); linkPing();
-/* 手机回到前台：立即探测一次，别等红色误报 */
-document.addEventListener('visibilitychange', function(){
-  if(!document.hidden){ LINK.fails=0; linkPing(); }
-});
+var linkTimer=null;
+function startLinkPing(){ if(linkTimer) return; linkTimer=setInterval(linkPing, 5000); }
+function stopLinkPing(){ if(linkTimer){ clearInterval(linkTimer); linkTimer=null; } }
+startLinkPing(); linkPing();
 function loadAll(){ loadSystem(); loadServices(); renderApps(); initPortBar(); initIpTools(); loadAccessIps(CUR_PORT); }
 
 function initIpTools(){
@@ -1654,14 +1658,35 @@ function initIpTools(){
   initHistTools();
 }
 function spinRefreshBtn(){ var rb=document.getElementById('refreshAll'); if(!rb)return; rb.classList.remove('spin'); void rb.offsetWidth; rb.classList.add('spin'); setTimeout(function(){rb.classList.remove('spin');},650); }
+var _pollTimers=[];
 function startPolling(){
   loadAll();
   histInit();
-  sysTimer=setInterval(loadSystem, 1500);
-  svcTimer=setInterval(function(){ loadServices(); loadMysql(); renderApps(); }, 5000);
-  setInterval(function(){ if(HISTORY_MODE().view==='live') loadAccessIps(CUR_PORT); }, 15000);   // IP 面板每 15s 刷新(仅实时视图)
+  stopPolling();  // 清旧
+  // 频率优化：系统表盘 4s（原 1.5s，数据变化慢）；服务/MySQL 5s；IP 15s
+  _pollTimers.push(setInterval(function(){ if(document.hidden) return; loadSystem(); }, 4000));
+  _pollTimers.push(setInterval(function(){ if(document.hidden) return; loadServices(); loadMysql(); renderApps(); }, 5000));
+  _pollTimers.push(setInterval(function(){ if(document.hidden) return; if(HISTORY_MODE().view==='live') loadAccessIps(CUR_PORT); }, 15000));
+}
+function stopPolling(){ _pollTimers.forEach(function(t){ clearInterval(t); }); _pollTimers=[]; }
+// 页面切到后台→停所有轮询（省电）；回到前台→立即刷新一次并恢复
+function _onVisibility(){
+  if(document.hidden){
+    stopPolling();
+    stopLinkPing();
+    if(typeof logTimer!=='undefined' && logTimer){ clearInterval(logTimer); logTimer=null; }
+  } else {
+    LINK.fails=0; linkPing();
+    loadSystem(); loadServices(); loadMysql(); renderApps();
+    if(HISTORY_MODE().view==='live') loadAccessIps(CUR_PORT);
+    startPolling();
+    startLinkPing();
+    if(typeof logId!=='undefined' && logId !== null && typeof fetchLogs==='function'){ fetchLogs(false); }
+  }
 }
 startPolling();
+// 合并的可见性处理（原来只处理 linkPing，现在统一启停轮询）
+document.addEventListener('visibilitychange', _onVisibility);
 /* 主题已锁定为深色模式：移除白昼切换，永远使用深色（防止白字看不见）。 */
 (function(){
   try{ localStorage.removeItem('svcctrl_theme'); }catch(e){}
