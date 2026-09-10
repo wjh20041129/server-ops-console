@@ -1196,7 +1196,9 @@ async function expIP(row){
   d.style.display='block'; d.style.animation='none'; void d.offsetWidth; d.style.animation='ipdIn .28s ease';
   d.innerHTML='<div class="err">载入明细…</div>';
   try{
-    var r=await api('/api/access/ip/'+encodeURIComponent(ip));
+    var _hm=HISTORY_MODE();
+    var _du=(_hm.view!=='live')? ('?date='+encodeURIComponent(_hm.date)) : '';
+    var r=await api('/api/access/ip/'+encodeURIComponent(ip)+_du);
     var h='';
     if((r.ssh||[]).length){ h+='<div class="sub2" style="color:#f59e0b">SSH 事件 ('+r.ssh.length+')</div><table class="access-t"><tbody>'+
       r.ssh.map(function(e){var col=e.kind==='failed'?'#ef4444':'#94a3b8';return '<tr><td style="color:'+col+'">'+escIP(e.kind)+'</td><td>'+escIP(e.text.slice(0,150))+'</td></tr>';}).join('')+'</tbody></table>'; }

@@ -1223,6 +1223,17 @@ def _tail_nginx(n=25000, logfile=None):
         return []
 
 
+def _tail_all_nginx(n=25000):
+    """聚合读取所有分端口 nginx 日志(主日志+各独立端口日志)，返回一条条日志文本行。
+    真实流量都在分端口日志(access_443/80/8443/8444.log)，主 access.log 常为空。
+    """
+    paths = [ACCESS_LOG] + list(PORT_LOG_FILE.values())
+    lines = []
+    for p in paths:
+        lines.extend(_tail_nginx(n // max(1, len(paths)), p))
+    return lines
+
+
 def _ssh_events(hours=24):
     out = []
     try:
@@ -1260,7 +1271,7 @@ def api_access_ip():
     except Exception:
         hours = 24
     agg = {}   # ip -> dict
-    for ln in _tail_nginx():
+    for ln in _tail_all_nginx():
         m = _nginx_line.match(ln)
         if not m:
             continue
@@ -1322,8 +1333,17 @@ def api_access_ip_detail(ip):
         return jsonify({'error': '未登录'}), 401
     if not _is_external(ip):
         return jsonify({'error': '仅支持外网IP'}), 400
+    day = (request.args.get('date') or '').strip()
+    # 历史日期：读该日存档(nginx 归档日志 + journald 当日 SSH)，而非仅当前日志
+    if day and day != datetime.now().strftime('%Y-%m-%d'):
+        try:
+            web = _detail_web_from_archive(ip, day)
+            ssh = _detail_ssh_from_journal(ip, day)
+            return jsonify({'ip': ip, 'date': day, 'web': web, 'ssh': ssh})
+        except Exception as e:
+            return jsonify({'ip': ip, 'date': day, 'web': [], 'ssh': [], 'error': str(e)})
     web = []
-    for ln in _tail_nginx():
+    for ln in _tail_all_nginx():
         m = _nginx_line.match(ln)
         if not m or m.group(1) != ip:
             continue
@@ -1333,6 +1353,50 @@ def api_access_ip_detail(ip):
     web.reverse()
     ssh = [e for e in _ssh_events() if e['ip'] == ip][-100:]
     return jsonify({'ip': ip, 'web': web, 'ssh': ssh})
+
+
+def _detail_web_from_archive(ip, day):
+    """从指定日期的 nginx 日志(当前或归档)取该 IP 的请求明细。"""
+    import ip_history
+    out = []
+    for lp in ip_history.ACCESS_LOGS:
+        path = ip_history._resolve_log_path(lp, day)
+        if not path:
+            continue
+        txt = ip_history._read_nginx_file(path)
+        for ln in txt.splitlines():
+            m = _nginx_line.match(ln)
+            if not m or m.group(1) != ip:
+                continue
+            out.append({'t': m.group(2), 'method': m.group(3), 'path': m.group(4),
+                        'status': m.group(5), 'ua': m.group(7)})
+    out = out[-200:]
+    out.reverse()
+    return out
+
+
+def _detail_ssh_from_journal(ip, day):
+    """从 journald 取指定日期该 IP 的 SSH 事件。"""
+    out = []
+    try:
+        r = subprocess.run(['journalctl', '-u', 'ssh', '--no-pager', '-o', 'short-iso',
+                            '--since', day + ' 00:00:00', '--until', day + ' 23:59:59'],
+                           capture_output=True, text=True, timeout=20)
+        for ln in r.stdout.splitlines():
+            if ip in ln:
+                kind = 'unknown'
+                if 'Accepted' in ln:
+                    kind = 'accepted'
+                elif 'Failed' in ln:
+                    kind = 'failed'
+                elif 'Connection reset' in ln:
+                    kind = 'reset'
+                elif 'Disconnected' in ln:
+                    kind = 'disc'
+                out.append({'ip': ip, 'kind': kind, 'text': ln.strip()})
+    except Exception:
+        pass
+    return out[-100:]
 
 
 # 已知对外端口 → nginx 独立日志文件映射。22=SSH(不走nginx日志,走journalctl)。
@@ -1473,9 +1537,9 @@ def api_access_ip_ai(ip):
     if not _is_external(ip):
         return jsonify({'error': '仅支持外网IP'}), 400
     model = request.args.get('model') or ''
-    # 收集该 IP 行为文本(同 detail 路径, 自洽不重复落库)
+    # 收集该 IP 行为文本(同 detail 路径, 自洽不重复落库)。真实流量在分端口日志。
     web = []
-    for ln in _tail_nginx():
+    for ln in _tail_all_nginx():
         m = _nginx_line.match(ln)
         if not m or m.group(1) != ip:
             continue
@@ -1487,6 +1551,8 @@ def api_access_ip_ai(ip):
     lines.append("HTTP/HTTPS 请求 %d 条（最新的在前）：" % len(web))
     for t, mm, pth, st in web[:60]:
         lines.append("  %s | %s %s -> %s" % (t, mm, pth, st))
+    if not web:
+        lines.append("  （无 web 请求记录）")
     if ssh:
         lines.append("SSH 事件 %d 条：" % len(ssh))
         for e in ssh[-25:]:
@@ -1495,7 +1561,10 @@ def api_access_ip_ai(ip):
         lines.append("无 SSH 事件。")
     sys_prompt = ("你是网络安全分析助手。根据给出的访问日志，判断这个IP的行为："
                   "是正常家庭/办公用户，还是扫描器/爬虫/暴力破解尝试；指出主要访问了哪些"
-                  "服务与接口、有无风险、是否建议关注。用中文、简洁分点回答。")
+                  "服务与接口、有无风险、是否建议关注。用中文、简洁分点回答。"
+                  "注意：本服务器控制台自身的接口(/api/system /api/services /api/mysql /api/ping "
+                  "/api/access/* 等)会被页面高频轮询（每秒多次），若某IP只是在规律访问这些接口、"
+                  "且无扫描/爆破特征，应判断为“控制台正常使用”，不要误判为扫描器。")
     msg = _llm_chat([
         {"role": "system", "content": sys_prompt},
         {"role": "user", "content": "\n".join(lines)},

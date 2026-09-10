@@ -33,17 +33,20 @@ ACCESS_LOGS = [
     '/var/log/nginx/access_8444.log',
 ]
 
-# 常见扫描/漏洞探测路径特征（命中任一即计 scan_hits）。子串匹配，宽松。
+# 常见扫描/漏洞探测特征。匹配用“子串”，但已剔除会误伤控制台自身合法资源的前缀
+# （如 /vnc/vendor/*、/openclaw/assets/*、/config.json 是本机正常资源）。
+# 攻击者探测的“目录泄露”路径保留，但其下常见不存在路径（.git/config 等）多数本身已命中 /.git/。
 SCAN_PATHS = [
     '/wp-admin', '/wp-login', '/wp-content', '/xmlrpc.php',
-    '/.env', '/.git/', '/.git/HEAD', '/.svn/', '/.hg/',
+    '/.env', '/.git', '/.svn', '/.hg',
     '/phpinfo.php', '/phpmyadmin', '/pma', '/admin.php', '/administrator',
-    '/config.php', '/config', '/backup', '/db_backup', '/sql', '/dump',
+    '/config.php', '/config/php', '/database/config', '/app/config',
+    '/backup', '/db_backup', '/database.sql', '/dump.sql', '/sql/backup',
     '/shell', '/webshell', '/c99', '/r57', '/mutillidae', '/dvwa',
     '/actuator', '/jenkins', '/cve-', '/log4j', '/eval', '/bash',
-    '/web.config', '/crossdomain.xml', '/actuator/env', '/manager/html',
-    '/cgi-bin', '/vendor', '/laravel', '/thinkphp', '/struts',
-    '/.aws/', '/.ssh/', '/src/', '/.npmrc', '/.htaccess',
+    '/web.config', '/actuator/env', '/manager/html',
+    '/cgi-bin', '/laravel', '/thinkphp', '/struts',
+    '/.aws', '/.ssh/', '/.npmrc', '/.htaccess',
 ]
 
 _NGINX_LINE = re.compile(
