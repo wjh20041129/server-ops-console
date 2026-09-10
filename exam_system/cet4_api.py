@@ -147,7 +147,7 @@ def group_create():
     cursor = conn.cursor()
     
     # 获取pending单词
-    cursor.execute("SELECT id, word, meaning FROM cet4_words WHERE status='pending' ORDER BY RAND() LIMIT 20")
+    cursor.execute("SELECT id, word, meaning FROM cet4_words WHERE status='pending' AND is_cut=0 ORDER BY RAND() LIMIT 20")
     pending = cursor.fetchall()
     
     if not pending:
@@ -195,7 +195,7 @@ def group_next_word():
         SELECT id, word, phonetic, meaning, status, review_count,
                ai_example, ai_memorytip, ai_detail, ai_loaded
         FROM cet4_words 
-        WHERE group_id=%s AND status IN ('pending','review')
+        WHERE group_id=%s AND status IN ('pending','review') AND is_cut=0
         ORDER BY FIELD(status, 'review', 'pending'), RAND()
         LIMIT 1
     """, (group_id,))
@@ -222,7 +222,7 @@ def group_words():
         SELECT id, word, phonetic, meaning, status, review_count,
                ai_example, ai_memorytip, ai_detail, ai_loaded
         FROM cet4_words 
-        WHERE group_id=%s
+        WHERE group_id=%s AND is_cut=0
         ORDER BY id ASC
     """, (group_id,))
     words = cursor.fetchall()
@@ -298,7 +298,7 @@ def group_review_words():
         SELECT id, word, phonetic, meaning, status, review_count,
                ai_example, ai_memorytip, ai_detail, ai_loaded
         FROM cet4_words 
-        WHERE group_id=%s AND status='review'
+        WHERE group_id=%s AND status='review' AND is_cut=0
         ORDER BY id ASC
     """, (group_id,))
     words = cursor.fetchall()
@@ -373,6 +373,70 @@ def word_mark():
             conn.close()
             return jsonify({'success': True, 'status': 'review', 'review_count': new_count})
 
+
+# ============================================================
+# 3.5 斩词：真正掌握、以后不再出现，进熟词本
+# ============================================================
+@cet4_bp.route('/api/cet4/word/cut', methods=['POST'])
+def word_cut():
+    """把一个词手动归入熟词本：is_cut=1，从此不出现在任何刷词池。"""
+    data = request.json or {}
+    word_id = data.get('word_id')
+    if not word_id:
+        return jsonify({'error': '缺少word_id'}), 400
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, word FROM cet4_words WHERE id=%s", (word_id,))
+    if not cursor.fetchone():
+        conn.close()
+        return jsonify({'error': '单词不存在'}), 404
+    cursor.execute("UPDATE cet4_words SET is_cut=1, cut_at=%s, last_study_time=%s WHERE id=%s",
+                   (datetime.now(), datetime.now(), word_id))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'cut': True})
+
+
+@cet4_bp.route('/api/cet4/word/uncut', methods=['POST'])
+def word_uncut():
+    """熟词本还原：取消斩，恢复到斩之前的状态（原状态不变）。"""
+    data = request.json or {}
+    word_id = data.get('word_id')
+    if not word_id:
+        return jsonify({'error': '缺少word_id'}), 400
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM cet4_words WHERE id=%s", (word_id,))
+    if not cursor.fetchone():
+        conn.close()
+        return jsonify({'error': '单词不存在'}), 404
+    cursor.execute("UPDATE cet4_words SET is_cut=0, cut_at=NULL WHERE id=%s", (word_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'cut': False})
+
+
+@cet4_bp.route('/api/cet4/cutbook/list', methods=['GET'])
+def cutbook_list():
+    """熟词本：已斩的单词列表（支持搜索）。"""
+    search = request.args.get('search', '').strip()
+    conn = get_db()
+    cursor = conn.cursor()
+    sql = "SELECT id, word, phonetic, meaning, cut_at FROM cet4_words WHERE is_cut=1"
+    params = []
+    if search:
+        sql += " AND (word LIKE %s OR meaning LIKE %s)"
+        params.extend([f'%{search}%', f'%{search}%'])
+    sql += " ORDER BY cut_at DESC LIMIT 500"
+    cursor.execute(sql, params)
+    words = cursor.fetchall()
+    for w in words:
+        if w.get('cut_at'):
+            w['cut_at'] = w['cut_at'].strftime('%Y-%m-%d %H:%M')
+    conn.close()
+    return jsonify({'total': len(words), 'words': words})
+
+
 # ============================================================
 # 4. 艾宾浩斯复习：今日到期列表
 # ============================================================
@@ -385,7 +449,7 @@ def review_today_list():
         SELECT id, word, phonetic, meaning, ebbinghaus_stage, review_count
         FROM cet4_words 
         WHERE is_ebbinghaus_done=0 AND ebbinghaus_stage>0 AND next_review_time IS NOT NULL 
-        AND next_review_time <= %s
+        AND next_review_time <= %s AND is_cut=0
         ORDER BY next_review_time ASC
     """, (now,))
     words = cursor.fetchall()
@@ -448,7 +512,7 @@ def learned_list():
     conn = get_db()
     cursor = conn.cursor()
     
-    sql = "SELECT id, word, phonetic, meaning, ebbinghaus_stage, is_ebbinghaus_done FROM cet4_words WHERE status='familiar'"
+    sql = "SELECT id, word, phonetic, meaning, ebbinghaus_stage, is_ebbinghaus_done FROM cet4_words WHERE status='familiar' AND is_cut=0"
     params = []
     if search:
         sql += " AND (word LIKE %s OR meaning LIKE %s)"
@@ -479,7 +543,7 @@ def wrongbook_list():
         SELECT id, word, phonetic, meaning, review_count, ebbinghaus_stage, status,
                last_study_time
         FROM cet4_words
-        WHERE (status='review' OR review_count > 0 OR ebbinghaus_stage > 1)
+        WHERE (status='review' OR review_count > 0 OR ebbinghaus_stage > 1) AND is_cut=0
     """
     params = []
     if search:
@@ -504,7 +568,7 @@ def curve_data():
         SELECT id, word, phonetic, meaning, ebbinghaus_stage, is_ebbinghaus_done,
                last_study_time, next_review_time
         FROM cet4_words
-        WHERE status='familiar' AND ebbinghaus_stage > 0 AND last_study_time IS NOT NULL
+        WHERE status='familiar' AND ebbinghaus_stage > 0 AND last_study_time IS NOT NULL AND is_cut=0
         ORDER BY last_study_time ASC
     """)
     words = cursor.fetchall()
@@ -528,8 +592,8 @@ def group_status():
     # 当前活跃组（有未处理单词的组）
     cursor.execute("""
         SELECT group_id, 
-            SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as remaining,
-            SUM(CASE WHEN status IN ('familiar','review') THEN 1 ELSE 0 END) as learned,
+            SUM(CASE WHEN status='pending' AND is_cut=0 THEN 1 ELSE 0 END) as remaining,
+            SUM(CASE WHEN status IN ('familiar','review') AND is_cut=0 THEN 1 ELSE 0 END) as learned,
             COUNT(*) as total
         FROM cet4_words 
         WHERE group_id IS NOT NULL 
@@ -541,23 +605,27 @@ def group_status():
     current_group = cursor.fetchone()
     
     # 待学习单词总数
-    cursor.execute("SELECT COUNT(*) as cnt FROM cet4_words WHERE status='pending'")
+    cursor.execute("SELECT COUNT(*) as cnt FROM cet4_words WHERE status='pending' AND is_cut=0")
     pending_total = cursor.fetchone()['cnt']
     
     # 今日到期复习数
     now = datetime.now()
     cursor.execute("""
         SELECT COUNT(*) as cnt FROM cet4_words 
-        WHERE is_ebbinghaus_done=0 AND ebbinghaus_stage>0 AND next_review_time IS NOT NULL AND next_review_time <= %s
+        WHERE is_ebbinghaus_done=0 AND ebbinghaus_stage>0 AND next_review_time IS NOT NULL AND next_review_time <= %s AND is_cut=0
     """, (now,))
     review_today = cursor.fetchone()['cnt']
     
     # 已学单词总数
-    cursor.execute("SELECT COUNT(*) as cnt FROM cet4_words WHERE status='familiar'")
+    cursor.execute("SELECT COUNT(*) as cnt FROM cet4_words WHERE status='familiar' AND is_cut=0")
     familiar_total = cursor.fetchone()['cnt']
 
+    # 熟词本总数（已斩）
+    cursor.execute("SELECT COUNT(*) as cnt FROM cet4_words WHERE is_cut=1")
+    cut_total = cursor.fetchone()['cnt']
+
     # 生词本总数（曾标记不认识）
-    cursor.execute("SELECT COUNT(*) as cnt FROM cet4_words WHERE status='review' OR review_count > 0 OR ebbinghaus_stage > 1")
+    cursor.execute("SELECT COUNT(*) as cnt FROM cet4_words WHERE (status='review' OR review_count > 0 OR ebbinghaus_stage > 1) AND is_cut=0")
     wrong_total = cursor.fetchone()['cnt']
     
     conn.close()
@@ -572,13 +640,15 @@ def group_status():
     review_today = _int(review_today)
     familiar_total = _int(familiar_total)
     wrong_total = _int(wrong_total)
+    cut_total = _int(cut_total)
 
     return jsonify({
         'current_group': current_group,
         'pending_total': pending_total,
         'review_today': review_today,
         'familiar_total': familiar_total,
-        'wrong_total': wrong_total
+        'wrong_total': wrong_total,
+        'cut_total': cut_total
     })
 
 # ============================================================
