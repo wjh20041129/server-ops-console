@@ -1152,7 +1152,6 @@ html.dark .home-card-wide .info{ text-align:left; }
 </style>
 </head>
 <body>
-<button id="examTheme" aria-label="切换日间/夜间模式" title="日/夜模式" style="position:fixed;top:14px;right:14px;z-index:99999;width:36px;height:36px;border-radius:50%;border:1px solid rgba(128,128,128,.4);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 8px rgba(0,0,0,.15);background:#ffffff;color:#1a2332;">🌙</button>
 
 <div class="header">
     <div class="header-left" onclick="onBrandClick(event)">
@@ -5441,25 +5440,16 @@ function loadCet4HomeBadge() {
 }
 </script>
 <script>
-/* 主题：默认暗色；按钮日/夜切换，记住选择（不影响任何业务逻辑） */
+/* 主题：跟随系统深/浅色（无按钮）。系统切深色→自动变暗，切浅色→自动变亮。 */
 (function(){
-  var KEY='exam_theme';
-  var saved=null; try{ saved=localStorage.getItem(KEY); }catch(e){}
-  if(saved===null) saved='dark';
-  var isDark=(saved!=='light');
-  document.documentElement.classList.toggle('dark', isDark);
-  var btn=document.getElementById('examTheme');
-  if(!btn) return;
-  function paint(){
-    btn.textContent = isDark? '☀️':'🌙';
-    btn.style.background = isDark? '#2a2f3a':'#ffffff';
-    btn.style.color      = isDark? '#e8eaf0':'#1a2332';
-    document.documentElement.classList.toggle('dark', isDark);
+  var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function apply(dark){ document.documentElement.classList.toggle('dark', !!dark); }
+  apply(mq ? mq.matches : true);
+  if(mq){
+    var onChange = function(e){ apply(e.matches); };
+    if(mq.addEventListener) mq.addEventListener('change', onChange);
+    else if(mq.addListener) mq.addListener(onChange);
   }
-  paint();
-  btn.addEventListener('click', function(ev){ ev.preventDefault(); isDark=!isDark;
-    try{ localStorage.setItem(KEY, isDark?'dark':'light'); }catch(e){}
-    paint(); });
 })();
 </script>
 <script>
