@@ -35,11 +35,24 @@ a{color:#38bdf8;text-decoration:none}
 .hist-chartbox canvas{width:100%!important;height:280px!important;max-height:45vh}
 .hist-expand{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:5px;background:rgba(15,23,42,.85);border:1px solid #1e293b;color:#93c5fd;font-size:11px;padding:4px 9px;border-radius:8px;cursor:pointer;z-index:3}
 .hist-expand:hover{border-color:#38bdf8;color:#38bdf8}
-/* 全屏看图模式（手机）*/ 
+/* 全屏看图模式（手机/平板）*/ 
 body.hist-fullscreen{overflow:hidden}
-body.hist-fullscreen #histPanel{position:fixed;inset:0;z-index:4000;margin:0;border-radius:0;overflow:auto;background:#0b0f14}
-body.hist-fullscreen #histPanel .hist-chartbox{height:calc(100vh - 120px);display:flex;align-items:center}
-body.hist-fullscreen #histPanel canvas{height:calc(100vh - 150px)!important;max-height:none}
+body.hist-fullscreen #histPanel{position:fixed;inset:0;z-index:4000;margin:0;border-radius:0;overflow:hidden;background:#0b0f14;display:flex;flex-direction:column}
+body.hist-fullscreen #histPanel .hist-head{padding:8px 12px 0;margin:0}
+body.hist-fullscreen #histPanel .hist-toolbar{padding:6px 12px 0}
+body.hist-fullscreen #histPanel .hist-chartbox{flex:1 1 auto;min-height:0;margin:8px 12px;padding:6px;display:block}
+body.hist-fullscreen #histPanel canvas{width:100%!important;height:100%!important;max-height:none}
+body.hist-fullscreen #histPanel .hist-legend{padding:0 12px 8px;margin:0}
+.hist-expand.is-full{position:fixed;top:10px;right:10px;z-index:4100;background:rgba(15,23,42,.92)}
+/* 全屏 + 横屏：极致利用高度，标题/图例压缩 */
+@media (orientation:landscape){
+  body.hist-fullscreen #histPanel .hist-head{padding:4px 10px 0}
+  body.hist-fullscreen #histPanel .hist-head .live{display:none}
+  body.hist-fullscreen #histPanel .hist-toolbar{padding:4px 10px 0}
+  body.hist-fullscreen #histPanel .hist-chartbox{margin:6px 10px}
+  body.hist-fullscreen #histPanel .hist-legend{padding:0 10px 4px;font-size:10px;gap:10px}
+  body.hist-fullscreen #histPanel .hist-hint{display:none}
+}
 .hist-empty{color:#64748b;font-size:13px;text-align:center;padding:40px 10px}
 .hist-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:#94a3b8;margin-top:10px;align-items:center}
 .hist-legend span{display:inline-flex;align-items:center;gap:5px}
@@ -201,18 +214,22 @@ body.hist-fullscreen #histPanel canvas{height:calc(100vh - 150px)!important;max-
 .um-link.ok:hover{background:rgba(52,211,153,.12)}
 .um-created{font-size:10px;color:#475569;flex-shrink:0}
 .link-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 11px;border-radius:20px;border:1px solid rgba(120,140,160,.35);background:rgba(20,27,36,.5);color:#9fb0c0;font-weight:600;transition:.2s;cursor:default}
-/* 连接正常：蓝底黑字 + 呼吸(仿真实指示灯)。延迟越高呼吸越快，由 JS 设 --breath 时长 */
-.link-chip.ok{background:#2f81f7;border-color:#2f81f7;color:#06121f;box-shadow:0 0 10px rgba(47,129,247,.5);animation:chipBreath var(--breath,2.6s) ease-in-out infinite}
-@keyframes chipBreath{0%,100%{opacity:1;box-shadow:0 0 10px rgba(47,129,247,.55)}50%{opacity:.72;box-shadow:0 0 3px rgba(47,129,247,.22)}}
-.link-chip.ok .dot{background:#06121f}
-/* 延迟偏高：黄色警示（保留可读性）*/
-.link-chip.warn{background:#f5b301;border-color:#f5b301;color:#241a00;box-shadow:0 0 10px rgba(245,179,1,.45)}
-.link-chip.warn .dot{background:#241a00}
-/* 断线：红底白字 */
-.link-chip.bad{background:#e5484d;border-color:#e5484d;color:#fff;box-shadow:0 0 10px rgba(229,72,77,.5)}
-.link-chip.bad .dot{background:#fff}
+/* 连接正常：与外面同样的深蓝底 + 蓝色边框呼吸辉光，文字为浅蓝。只靠边框发光，不靠满块亮色 */
+.link-chip.ok{background:rgba(15,23,42,.55);border-color:#3b82f6;color:#8fd0ff;animation:chipBreath var(--breath,2.6s) ease-in-out infinite}
+@keyframes chipBreath{
+  0%,100%{border-color:#3b82f6;box-shadow:0 0 8px rgba(59,130,246,.55), inset 0 0 6px rgba(59,130,246,.12)}
+  50%{border-color:rgba(59,130,246,.4);box-shadow:0 0 2px rgba(59,130,246,.18), inset 0 0 2px rgba(59,130,246,.04)}
+}
+.link-chip.ok .dot{background:#5eb0ff;box-shadow:0 0 6px rgba(94,176,255,.8)}
+/* 延迟偏高：黄色边框（保持可读性）*/
+.link-chip.warn{background:rgba(15,23,42,.55);border-color:#f5b301;color:#ffd77a;animation:chipBreathWarn var(--breath,2.6s) ease-in-out infinite}
+@keyframes chipBreathWarn{0%,100%{border-color:#f5b301;box-shadow:0 0 8px rgba(245,179,1,.5)}50%{border-color:rgba(245,179,1,.4);box-shadow:0 0 2px rgba(245,179,1,.15)}}
+.link-chip.warn .dot{background:#f5b301}
+/* 断线：红色边框 */
+.link-chip.bad{background:rgba(15,23,42,.55);border-color:#e5484d;color:#ff9a9e;animation:none;box-shadow:0 0 8px rgba(229,72,77,.5)}
+.link-chip.bad .dot{background:#e5484d}
 .link-lat{font-size:10px;opacity:.8;font-family:ui-monospace,Consolas,monospace}
-@media (prefers-reduced-motion:reduce){.link-chip.ok{animation:none}}
+@media (prefers-reduced-motion:reduce){.link-chip.ok,.link-chip.warn{animation:none}}
 .um-files{font-size:10px;color:#fbbf24;background:rgba(245,158,11,.1);padding:1px 6px;border-radius:10px;flex-shrink:0}
 /* IP 行为面板 */
 .portbar{display:flex;flex-wrap:wrap;gap:8px}
@@ -470,7 +487,7 @@ body{
   <span class="dbstatus">
     <span id="linkChip" class="link-chip ok"><span class="dot ok" id="linkInd"></span><span id="linkTxt">连接正常</span><span class="link-lat" id="linkLat"></span></span>
     <span><span class="dot ok" id="dbInd"></span><span id="dbTxt">MySQL 检测中…</span></span>
-    <span id="hostTxt">主机载入中…</span>
+    <span><span class="dot ok" id="hostInd"></span><span id="hostTxt" title="服务器主机名">服务器</span></span>
   </span>
   <span class="topright">
     <a class="btn btn-success btn-sm" id="openClawBtn" href="/openclaw/" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">
@@ -673,7 +690,8 @@ async function api(url, opt){
   return r.json();
 }
 var MY_ROLE='';
-api('/api/session').then(function(d){ MY_ROLE=(d&&d.role)||''; var b=document.getElementById('usersBtn'); if(b) b.style.display=(MY_ROLE==='owner')?'inline-flex':'none'; }).catch(function(){});
+api('/api/session').then(function(d){ MY_ROLE=(d&&d.role)||''; var b=document.getElementById('usersBtn'); if(b) b.style.display=(MY_ROLE==='owner')?'inline-flex':'none';
+  var h=document.getElementById('hostTxt'); if(h && d && d.host) h.textContent='服务器 '+d.host+' 在线'; }).catch(function(){});
 function toast(msg){
   var t=document.getElementById('toast'); t.textContent=msg;
   t.className='toast show'+(msg.indexOf('\u2717')===0?' err2':(msg.indexOf('\u2713')===0?' ok':''));
@@ -792,28 +810,36 @@ async function histLoad(){
     }
   });
 }
-/* 全屏看图（手机）—— 点了横屏查看更清楚；并保留点击看进程 */
+/* 全屏看图（手机/平板）—— 点了横屏查看更清楚；旋转不会自动退出，只有手动点退出 */
+var FULLSCREEN=false;
 function histToggleFullscreen(force){
-  var on = (typeof force==='boolean')? force : !document.body.classList.contains('hist-fullscreen');
+  var on = (typeof force==='boolean')? force : !FULLSCREEN;
+  FULLSCREEN = on;
   document.body.classList.toggle('hist-fullscreen', on);
   var btn=document.getElementById('histExpand');
-  if(btn) btn.innerHTML = on ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> 退出' : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg> 全屏';
-  setTimeout(function(){ if(histChart) histChart.resize(); }, 260);
+  if(btn){
+    // 全屏时按钮浮到右上角，仍可点退出
+    btn.classList.toggle('is-full', on);
+    btn.innerHTML = on ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> 退出' : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg> 全屏';
+  }
+  // 尺寸变化后让图表重算一次（旋转/进入/退出都要）
+  setTimeout(function(){ if(histChart) histChart.resize(); }, 280);
+  setTimeout(function(){ if(histChart) histChart.resize(); }, 700);
 }
 function histInitExpand(){
   var btn=document.getElementById('histExpand'); if(!btn) return;
-  var narrow = window.matchMedia('(max-width:640px)').matches;
-  btn.style.display = narrow ? 'inline-flex' : 'none';
+  // 手机与触摸平板都提供全屏看图入口；纯桌面鼠标不显示
+  var coarse = window.matchMedia('(pointer: coarse)').matches;
+  var narrow = window.matchMedia('(max-width:1024px)').matches;
+  btn.style.display = (coarse || narrow) ? 'inline-flex' : 'none';
   btn.onclick = function(e){ e.stopPropagation(); histToggleFullscreen(); };
 }
 window.addEventListener('resize', function(){
   histInitExpand();
   if(histChart) histChart.resize();
-  if(document.body.classList.contains('hist-fullscreen') && !window.matchMedia('(max-width:640px)').matches){
-    histToggleFullscreen(false);
-  }
+  // 旋转到横屏时保持全屏（不再自动退出，仅手动退出）
 });
-window.addEventListener('orientationchange', function(){ setTimeout(function(){ if(histChart) histChart.resize(); }, 300); });
+window.addEventListener('orientationchange', function(){ setTimeout(function(){ if(histChart) histChart.resize(); }, 320); });
 
 async function histShowProcess(date, hm){
   var hhmm=hm.replace(':','');

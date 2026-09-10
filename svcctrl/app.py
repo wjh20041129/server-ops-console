@@ -459,9 +459,15 @@ def api_ping():
 
 @app.route('/api/session')
 def api_session():
+    import socket as _socket
+    try:
+        _host = _socket.gethostname()
+    except Exception:
+        _host = ''
     return jsonify({'authed': bool(session.get('authed')),
                     'user': session.get('user', ''),
-                    'role': session.get('role', '')})
+                    'role': session.get('role', ''),
+                    'host': _host})
 
 
 # ---------------------------------------------------------------------------
