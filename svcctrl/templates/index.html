@@ -33,6 +33,13 @@ a{color:#38bdf8;text-decoration:none}
 .hist-gran{font-size:11px;color:#64748b;margin-left:auto}
 .hist-chartbox{background:#0b1120;border:1px solid #1e293b;border-radius:12px;padding:12px;position:relative}
 .hist-chartbox canvas{width:100%!important;height:280px!important;max-height:45vh}
+.hist-expand{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:5px;background:rgba(15,23,42,.85);border:1px solid #1e293b;color:#93c5fd;font-size:11px;padding:4px 9px;border-radius:8px;cursor:pointer;z-index:3}
+.hist-expand:hover{border-color:#38bdf8;color:#38bdf8}
+/* 全屏看图模式（手机）*/ 
+body.hist-fullscreen{overflow:hidden}
+body.hist-fullscreen #histPanel{position:fixed;inset:0;z-index:4000;margin:0;border-radius:0;overflow:auto;background:#0b0f14}
+body.hist-fullscreen #histPanel .hist-chartbox{height:calc(100vh - 120px);display:flex;align-items:center}
+body.hist-fullscreen #histPanel canvas{height:calc(100vh - 150px)!important;max-height:none}
 .hist-empty{color:#64748b;font-size:13px;text-align:center;padding:40px 10px}
 .hist-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:#94a3b8;margin-top:10px;align-items:center}
 .hist-legend span{display:inline-flex;align-items:center;gap:5px}
@@ -193,10 +200,19 @@ a{color:#38bdf8;text-decoration:none}
 .um-link.ok{color:#34d399}
 .um-link.ok:hover{background:rgba(52,211,153,.12)}
 .um-created{font-size:10px;color:#475569;flex-shrink:0}
-.link-chip{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:20px;border:1px solid rgba(120,140,160,.35);background:rgba(20,27,36,.5);color:#9fb0c0;font-weight:500;transition:.2s;cursor:default}
-.link-chip.bad{border-color:rgba(229,72,77,.5);background:rgba(229,72,77,.1);color:#f0a0a3}
-.link-chip.warn{border-color:rgba(246,201,69,.5);background:rgba(246,201,69,.08);color:#f2d488}
-.link-lat{font-size:10px;opacity:.75;font-family:ui-monospace,Consolas,monospace}
+.link-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 11px;border-radius:20px;border:1px solid rgba(120,140,160,.35);background:rgba(20,27,36,.5);color:#9fb0c0;font-weight:600;transition:.2s;cursor:default}
+/* 连接正常：蓝底黑字 + 呼吸(仿真实指示灯)。延迟越高呼吸越快，由 JS 设 --breath 时长 */
+.link-chip.ok{background:#2f81f7;border-color:#2f81f7;color:#06121f;box-shadow:0 0 10px rgba(47,129,247,.5);animation:chipBreath var(--breath,2.6s) ease-in-out infinite}
+@keyframes chipBreath{0%,100%{opacity:1;box-shadow:0 0 10px rgba(47,129,247,.55)}50%{opacity:.72;box-shadow:0 0 3px rgba(47,129,247,.22)}}
+.link-chip.ok .dot{background:#06121f}
+/* 延迟偏高：黄色警示（保留可读性）*/
+.link-chip.warn{background:#f5b301;border-color:#f5b301;color:#241a00;box-shadow:0 0 10px rgba(245,179,1,.45)}
+.link-chip.warn .dot{background:#241a00}
+/* 断线：红底白字 */
+.link-chip.bad{background:#e5484d;border-color:#e5484d;color:#fff;box-shadow:0 0 10px rgba(229,72,77,.5)}
+.link-chip.bad .dot{background:#fff}
+.link-lat{font-size:10px;opacity:.8;font-family:ui-monospace,Consolas,monospace}
+@media (prefers-reduced-motion:reduce){.link-chip.ok{animation:none}}
 .um-files{font-size:10px;color:#fbbf24;background:rgba(245,158,11,.1);padding:1px 6px;border-radius:10px;flex-shrink:0}
 /* IP 行为面板 */
 .portbar{display:flex;flex-wrap:wrap;gap:8px}
@@ -343,12 +359,20 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   .iph-act .mselect{flex:1 1 auto;min-width:0;font-size:12px;padding:7px 8px}
   .iph-act .ai-btn,.iph-act .blk{flex:1 1 auto;padding:8px 10px;font-size:12px;text-align:center}
 
-  /* --- IP 明细表格：横向可滑，字号收紧 --- */
+  /* --- IP 明细卡片式（手机）--- */
   .ipd{padding:10px;max-height:70vh}
-  .access-t{font-size:11px}
-  .access-t th,.access-t td{padding:3px 6px}
-  .access-t td{word-break:break-all}
   .sub2{font-size:11px}
+  .ipcards{display:flex;flex-direction:column;gap:7px;margin-top:6px}
+  .ipcard{background:rgba(255,255,255,.035);border:1px solid #22304a;border-radius:9px;padding:8px 10px}
+  .ipcard-hd{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+  .ipcard-st{font-size:11px;font-weight:700;padding:1px 7px;border-radius:6px;background:rgba(255,255,255,.06);color:#cbd5e1}
+  .ipcard-st.ok{background:rgba(34,197,94,.16);color:#4ade80}
+  .ipcard-st.warn{background:rgba(245,158,11,.16);color:#fbbf24}
+  .ipcard-st.bad{background:rgba(239,68,68,.16);color:#f87171}
+  .ipcard-t{font-size:11px;color:#64748b;font-family:ui-monospace,monospace;margin-left:auto}
+  .ipcard-path{font-family:ui-monospace,monospace;font-size:12px;color:#cbd5e1;word-break:break-all;line-height:1.45}
+  .ipcard-path b{color:#7dd3fc}
+  .ipcard-ua{font-size:10px;color:#64748b;margin-top:3px;word-break:break-all}
 
   /* --- 日志抽屉：全屏宽 --- */
   #logBox{width:100vw;min-width:0;max-width:100vw}
@@ -367,6 +391,17 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   .gauges{grid-template-columns:repeat(2,1fr)}
   .gauges .gauge:last-child{grid-column:span 2}
   .sysfast{grid-template-columns:1fr 1fr}
+}
+
+/* 触摸设备优化（iPad 无论横竖、触摸屏笔记本都命中；不影响纯鼠标）*/
+@media (pointer:coarse){
+  .btn,.portbtn,.mc-btn,.um-link{min-height:40px}
+  .btn-sm{min-height:34px;padding:7px 12px}
+  .portbtn{padding:8px 16px}
+  .hist-select{padding:8px 10px;min-height:40px}
+}
+@media (pointer:coarse) and (max-width:640px){
+  .iph-act .ai-btn,.iph-act .blk{min-height:40px}
 }
 
 /* ====== 塔科夫实验室增强层 (冷灰金属 + 荧光绿/冷青 · 克制) ====== */
@@ -502,6 +537,10 @@ body{
     </div>
     <div class="hist-chartbox">
       <canvas id="histChart" height="0"></canvas>
+      <button class="hist-expand" id="histExpand" title="全屏查看（可横屏）">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        全屏
+      </button>
     </div>
     <div class="hist-legend">
       <span><i style="background:#38bdf8"></i>CPU %</span>
@@ -716,28 +755,33 @@ async function histLoad(){
   // 确保 canvas 存在（首次已内联，无需重建）
   var cv=document.getElementById('histChart');
   var labels=pts.map(function(p){return p.time;});
+  var isTouch = window.matchMedia('(pointer: coarse)').matches;
+  // 统一不画点（pointRadius:0），hover/点击时才高亮显示该时刻；手机靠点击弹 tooltip
   var ds=[
-    {label:'CPU', data:pts.map(p=>p.cpu), borderColor:'#38bdf8', backgroundColor:'rgba(56,189,248,.12)', fill:true, yAxisID:'y', spanGaps:true, tension:.25},
-    {label:'内存', data:pts.map(p=>p.mem), borderColor:'#34d399', backgroundColor:'rgba(52,211,153,.10)', fill:true, yAxisID:'y', spanGaps:true, tension:.25},
-    {label:'磁盘', data:pts.map(p=>p.disk), borderColor:'#fb923c', backgroundColor:'transparent', yAxisID:'y', spanGaps:true, tension:.25},
-    {label:'下载KB/s', data:pts.map(p=>p.netIn), borderColor:'#a78bfa', backgroundColor:'transparent', yAxisID:'y1', spanGaps:true, tension:.25},
-    {label:'上传KB/s', data:pts.map(p=>p.netOut), borderColor:'#f472b6', backgroundColor:'transparent', yAxisID:'y1', spanGaps:true, tension:.25}
+    {label:'CPU', data:pts.map(p=>p.cpu), borderColor:'#38bdf8', backgroundColor:'rgba(56,189,248,.10)', fill:true, yAxisID:'y', spanGaps:true, tension:.3, borderWidth:2, pointRadius:0, pointHoverRadius:4, pointHitRadius:12},
+    {label:'内存', data:pts.map(p=>p.mem), borderColor:'#34d399', backgroundColor:'rgba(52,211,153,.07)', fill:true, yAxisID:'y', spanGaps:true, tension:.3, borderWidth:2, pointRadius:0, pointHoverRadius:4, pointHitRadius:12},
+    {label:'磁盘', data:pts.map(p=>p.disk), borderColor:'#fb923c', backgroundColor:'transparent', yAxisID:'y', spanGaps:true, tension:.3, borderWidth:1.6, pointRadius:0, pointHoverRadius:4, pointHitRadius:12},
+    {label:'下载KB/s', data:pts.map(p=>p.netIn), borderColor:'#a78bfa', backgroundColor:'transparent', yAxisID:'y1', spanGaps:true, tension:.3, borderWidth:1.6, pointRadius:0, pointHoverRadius:4, pointHitRadius:12},
+    {label:'上传KB/s', data:pts.map(p=>p.netOut), borderColor:'#f472b6', backgroundColor:'transparent', yAxisID:'y1', spanGaps:true, tension:.3, borderWidth:1.6, pointRadius:0, pointHoverRadius:4, pointHitRadius:12}
   ];
   if(histChart){ histChart.destroy(); }
   histChart=new Chart(cv, {
     type:'line',
     data:{labels:labels, datasets:ds},
     options:{
-      responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      // 触摸设备：点哪里显示哪里（tap → tooltip），并保留点击看进程
+      onHover:function(evt,els){ if(isTouch) return; if(els&&els.length) evt.native.target.style.cursor='pointer'; },
       plugins:{
         legend:{display:false},
         tooltip:{backgroundColor:'#0f172a',titleColor:'#e2e8f0',bodyColor:'#cbd5e1',borderColor:'#1e293b',borderWidth:1,
           callbacks:{afterBody:function(items){ return '\u70b9\u51fb\u53ef\u67e5\u770b\u8be5\u65f6\u523b\u8fdb\u7a0b'; }}}
       },
       scales:{
-        x:{ticks:{color:'#64748b',maxTicksLimit:12,maxRotation:0},grid:{color:'rgba(30,41,59,.5)'}},
-        y:{position:'left',min:0,max:100,ticks:{color:'#64748b',stepSize:20},grid:{color:'rgba(30,41,59,.5)'},title:{display:true,text:'%',color:'#64748b'}},
-        y1:{position:'right',min:0,ticks:{color:'#64748b'},grid:{display:false},title:{display:true,text:'KB/s',color:'#64748b'}}
+        x:{ticks:{color:'#64748b',maxTicksLimit: isTouch?6:10, maxRotation:0, autoSkip:true, autoSkipPadding:24},grid:{display:false}},
+        y:{position:'left',min:0,max:100,ticks:{color:'#64748b',stepSize:25},grid:{color:'rgba(30,41,59,.4)'},title:{display:false}},
+        y1:{position:'right',min:0,ticks:{color:'#64748b',maxTicksLimit:4},grid:{display:false},title:{display:false}}
       },
       onClick:function(evt,els){
         if(!els.length) return;
@@ -748,6 +792,29 @@ async function histLoad(){
     }
   });
 }
+/* 全屏看图（手机）—— 点了横屏查看更清楚；并保留点击看进程 */
+function histToggleFullscreen(force){
+  var on = (typeof force==='boolean')? force : !document.body.classList.contains('hist-fullscreen');
+  document.body.classList.toggle('hist-fullscreen', on);
+  var btn=document.getElementById('histExpand');
+  if(btn) btn.innerHTML = on ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> 退出' : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg> 全屏';
+  setTimeout(function(){ if(histChart) histChart.resize(); }, 260);
+}
+function histInitExpand(){
+  var btn=document.getElementById('histExpand'); if(!btn) return;
+  var narrow = window.matchMedia('(max-width:640px)').matches;
+  btn.style.display = narrow ? 'inline-flex' : 'none';
+  btn.onclick = function(e){ e.stopPropagation(); histToggleFullscreen(); };
+}
+window.addEventListener('resize', function(){
+  histInitExpand();
+  if(histChart) histChart.resize();
+  if(document.body.classList.contains('hist-fullscreen') && !window.matchMedia('(max-width:640px)').matches){
+    histToggleFullscreen(false);
+  }
+});
+window.addEventListener('orientationchange', function(){ setTimeout(function(){ if(histChart) histChart.resize(); }, 300); });
+
 async function histShowProcess(date, hm){
   var hhmm=hm.replace(':','');
   document.getElementById('histPpTime').textContent = date.slice(4,6)+'月'+date.slice(6,8)+'日 '+hm;
@@ -774,6 +841,7 @@ async function histInit(){
       sel.appendChild(o);
     });
     histLoad();
+    histInitExpand();
   }catch(e){}
 }
 
@@ -1301,10 +1369,33 @@ async function expIP(row){
     var _du=(_hm.view!=='live')? ('?date='+encodeURIComponent(_hm.date)) : '';
     var r=await api('/api/access/ip/'+encodeURIComponent(ip)+_du);
     var h='';
-    if((r.ssh||[]).length){ h+='<div class="sub2" style="color:#f59e0b">SSH 事件 ('+r.ssh.length+')</div><table class="access-t"><tbody>'+
-      r.ssh.map(function(e){var col=e.kind==='failed'?'#ef4444':'#94a3b8';return '<tr><td style="color:'+col+'">'+escIP(e.kind)+'</td><td>'+escIP(e.text.slice(0,150))+'</td></tr>';}).join('')+'</tbody></table>'; }
-    if((r.web||[]).length){ h+='<div class="sub2">HTTP/HTTPS 请求 ('+r.web.length+')</div><table class="access-t"><thead><tr><th>时间</th><th>请求</th><th>状态</th><th>来源</th></tr></thead><tbody>'+
-      r.web.map(function(e){return '<tr><td>'+escIP(e.t)+'</td><td>'+escIP((e.method||'')+' '+(e.path||''))+'</td><td class="stn">'+escIP(e.status)+'</td><td>'+escIP(shortUA(e.ua))+'</td></tr>';}).join('')+'</tbody></table>'; }
+    var narrow = window.matchMedia('(max-width:640px)').matches;
+    if((r.ssh||[]).length){ h+='<div class="sub2" style="color:#f59e0b">SSH 事件 ('+r.ssh.length+')</div>';
+      if(narrow){
+        h+='<div class="ipcards">'+r.ssh.slice(0,60).map(function(e){var col=e.kind==='failed'?'#f87171':'#94a3b8';
+          return '<div class="ipcard"><div class="ipcard-hd"><span class="ipcard-st" style="color:'+col+'">'+escIP(e.kind)+'</span></div><div class="ipcard-path">'+escIP(e.text.slice(0,200))+'</div></div>';}).join('')+'</div>';
+      } else {
+        h+='<table class="access-t"><tbody>'+
+          r.ssh.map(function(e){var col=e.kind==='failed'?'#ef4444':'#94a3b8';return '<tr><td style="color:'+col+'">'+escIP(e.kind)+'</td><td>'+escIP(e.text.slice(0,150))+'</td></tr>';}).join('')+'</tbody></table>';
+      }
+    }
+    if((r.web||[]).length){ h+='<div class="sub2">HTTP/HTTPS 请求 ('+r.web.length+')</div>';
+      if(narrow){
+        // 手机：卡片式，每条请求一块，路径可换行完整显示
+        h+='<div class="ipcards">'+r.web.map(function(e){
+          var st=e.status||'';
+          var stCls = (st[0]==='2')?'ok':(st[0]==='3')?'warn':(st[0]==='4'||st[0]==='5')?'bad':'ok';
+          var tm=/(\d{4}):(\d{2}:\d{2}):\d{2}/.exec(e.t||'') || /(\d{2}:\d{2}:\d{2})/.exec(e.t||'');
+          var t=tm ? (tm[2]||tm[1]) : (e.t||'');
+          return '<div class="ipcard"><div class="ipcard-hd"><span class="ipcard-st '+stCls+'">'+escIP(st)+'</span><span class="ipcard-t">'+escIP(t)+'</span></div>'+
+            '<div class="ipcard-path"><b>'+escIP(e.method||'')+'</b> '+escIP(e.path||'')+'</div>'+
+            (e.ua?'<div class="ipcard-ua">'+escIP(shortUA(e.ua))+'</div>':'')+'</div>';
+        }).join('')+'</div>';
+      } else {
+        h+='<table class="access-t"><thead><tr><th>时间</th><th>请求</th><th>状态</th><th>来源</th></tr></thead><tbody>'+
+          r.web.map(function(e){return '<tr><td>'+escIP(e.t)+'</td><td>'+escIP((e.method||'')+' '+(e.path||''))+'</td><td class="stn">'+escIP(e.status)+'</td><td>'+escIP(shortUA(e.ua))+'</td></tr>';}).join('')+'</tbody></table>';
+      }
+    }
     if(!h) h='<div class="err">最近无该 IP 记录</div>';
     d.innerHTML=h;
   }catch(e){ d.innerHTML='<div class="err">明细失败：'+escIP(e.message||e)+'</div>'; }
@@ -1489,16 +1580,14 @@ async function linkPing(){
     var wasBad=!LINK.ok;
     LINK.fails=0; LINK.lastOk=Date.now();
     if(wasBad){ LINK.ok=true; toast('\u2713 连接已恢复'); }
-    if(elChip){ elChip.classList.remove('bad','warn'); elChip.classList.add('ok'); }
+    if(elChip){ elChip.classList.remove('ok','warn','bad'); elChip.classList.add('ok'); }
     if(elInd) elInd.className='dot ok';
     if(elTxt) elTxt.textContent = d.authed ? '连接正常' : '点此重新登录';
-    // 按延迟分档变色: <150 绿, 150-200 黄, >200 红 (仿 OpenClaw 控制台)
-    var latCls = 'ok';
-    if(dt>=150 && dt<200) latCls='warn';
-    else if(dt>=200) latCls='bad';
-    if(elChip){ elChip.classList.remove('ok','warn','bad'); elChip.classList.add(latCls); }
-    if(elInd) elInd.className='dot '+latCls;
-    if(elLat){ elLat.textContent = dt<1000 ? dt+'ms' : (dt/1000).toFixed(1)+'s'; elLat.classList.remove('ok','warn','bad'); elLat.classList.add(latCls); }
+    // 呼吸速度随延迟线性加快（延迟低→慢，高→快），但封顶不低于 0.7s 避免晃眼
+    if(elChip){
+      var bt = Math.max(0.7, Math.min(3.0, 3.0 - dt/160));
+      elChip.style.setProperty('--breath', bt.toFixed(2)+'s');
+    }
     if(!d.authed){ if(elChip){elChip.classList.remove('ok','warn','bad');elChip.classList.add('warn');} if(elInd)elInd.className='dot warn';
       if(elChip&&!elChip._bound){ elChip._bound=1; elChip.style.cursor='pointer'; elChip.onclick=function(){location.href='/login';}; } }
     if(elLat) elLat.textContent = dt<1000 ? dt+'ms' : (dt/1000).toFixed(1)+'s';
