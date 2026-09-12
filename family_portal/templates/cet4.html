@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220">
+<title>四级刷词 · 访客门户</title>
+<style>
+:root{--bg:#0b1220;--card:#16233a;--card2:#1c2c47;--line:#2b3d5c;--tx:#e8eef7;--mut:#8da0bb;--acc:#5eb3ff;--acc2:#7c7cf0;--ok:#37d39a;--warn:#ff9d5c;--err:#ff6b6b}
+html.light{--bg:#eef1f4;--card:#ffffff;--card2:#f3f6fb;--line:#d5dce6;--tx:#1a2332;--mut:#64748b;--acc:#0ea5e9;--acc2:#6d6df0;--ok:#059669;--warn:#ea9a4b;--err:#dc2626}
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:
+ radial-gradient(1200px 600px at 85% -10%,rgba(124,124,240,.10),transparent 60%),
+ radial-gradient(1000px 500px at -10% 10%,rgba(94,179,255,.10),transparent 55%),var(--bg);
+ color:var(--tx);min-height:100vh;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto;padding:18px 20px 40px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800}
+.brand .lg{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+ background:linear-gradient(135deg,#5eb3ff,#7c7cf0);font-size:15px;box-shadow:0 4px 14px rgba(94,179,255,.35)}
+.top a{color:var(--mut);text-decoration:none;font-size:14px;border:1px solid var(--line);padding:6px 12px;border-radius:8px}
+.top a:hover{color:var(--tx)}
+.stats{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 16px;flex:1;min-width:90px;text-align:center}
+.stat b{display:block;font-size:22px;color:var(--acc)}
+.stat span{font-size:12px;color:var(--mut)}
+.card{background:linear-gradient(135deg,rgba(94,179,255,.07),rgba(124,124,240,.06));border:1px solid var(--line);
+ border-radius:20px;padding:34px 28px;min-height:280px;display:flex;flex-direction:column;position:relative}
+.word{font-size:44px;font-weight:800;letter-spacing:.5px;text-align:center;margin-bottom:8px}
+.phonetic{text-align:center;color:var(--acc);font-size:18px;margin-bottom:22px}
+.meaning{font-size:17px;line-height:1.7;color:var(--tx);text-align:center;background:rgba(255,255,255,.04);
+ border-radius:12px;padding:16px;display:none;border:1px dashed var(--line)}
+.meaning.show{display:block}
+.extra{font-size:14px;color:var(--mut);line-height:1.8;margin-top:14px;max-height:120px;overflow:auto;display:none}
+.extra.show{display:block}
+.actions{display:flex;gap:12px;margin-top:26px}
+.btn{flex:1;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;color:#fff}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.btn.yes{background:linear-gradient(135deg,#22c55e,#16a34a)}
+.btn.no{background:linear-gradient(135deg,#ef4444,#dc2626)}
+.btn.hint{background:linear-gradient(135deg,#5eb3ff,#3b82f6)}
+.toolbar{display:flex;gap:10px;margin-top:16px;justify-content:center}
+.tbtn{background:var(--card2);border:1px solid var(--line);color:var(--tx);padding:9px 16px;border-radius:9px;font-size:13px;cursor:pointer}
+.tbtn:hover{border-color:var(--acc)}
+.msg{position:fixed;top:18px;left:50%;transform:translateX(-50%);padding:11px 20px;border-radius:10px;font-size:14px;z-index:99;display:none;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.msg.ok{background:rgba(34,197,94,.9);color:#fff}
+.msg.err{background:rgba(239,68,68,.9);color:#fff}
+.mode{color:var(--mut);font-size:13px;text-align:center;margin-bottom:14px}
+.done-box{text-align:center;padding:50px 20px;border:1px dashed var(--line);border-radius:20px}
+.done-box h2{font-size:22px;margin-bottom:10px}
+.done-box p{color:var(--mut);margin-bottom:20px}
+.review-list{margin-top:14px;display:none}
+.review-list.show{display:block}
+.remote{display:none}
+</style></head><body>
+<div class="wrap">
+  <div class="top"><span class="brand"><span class="lg">📖</span> 四级刷词 <small style="color:var(--mut);font-weight:400">独立练习</small></span>
+    <a href="/family/dashboard">← 我的空间</a></div>
+
+  <div class="stats">
+    <div class="stat"><b id="stTotal">0</b><span>已接触</span></div>
+    <div class="stat"><b id="stLearned" style="color:var(--ok)">0</b><span>已认识</span></div>
+    <div class="stat"><b id="stCut" style="color:var(--warn)">0</b><span>已斩</span></div>
+    <div class="stat"><b id="stMode" style="color:var(--acc2)">新词</b><span>模式</span></div>
+  </div>
+
+  <div class="mode" id="modeLabel">学习模式 · 点击认识/不认识，点「显示释义」先看答案</div>
+
+  <div class="card">
+    <div class="word" id="cw">—</div>
+    <div class="phonetic" id="cp"></div>
+    <div class="meaning" id="cm"></div>
+    <div class="extra" id="ce"></div>
+    <div class="actions">
+      <button class="btn hint" id="bHint" onclick="showMeaning()">显示释义</button>
+      <button class="btn no" id="bNo" onclick="mark(false)">不认识</button>
+      <button class="btn yes" id="bYes" onclick="mark(true)">认识</button>
+    </div>
+    <div class="toolbar">
+      <button class="tbtn" onclick="nextWord()">下一个</button>
+      <button class="tbtn" onclick="cutWord()">✕ 斩掉这个词</button>
+      <button class="tbtn" onclick="startReview()">复习</button>
+      <button class="tbtn" onclick="resetAll()">重置进度</button>
+    </div>
+  </div>
+
+  <div class="done-box" id="doneBox" style="display:none">
+    <h2>🎉 本组完成</h2>
+    <p>这一组词都刷完了，点「再来一组」继续，或去复习。</p>
+    <button class="tbtn" style="padding:11px 22px;color:#fff;background:linear-gradient(135deg,#5eb3ff,#3b82f6)" onclick="startNew()">再来一组</button>
+  </div>
+</div>
+<div class="msg" id="msg"></div>
+<script>
+var state={mode:'learn', words:[], idx:-1, currentWord:null, review:[], rIdx:-1};
+function $(id){return document.getElementById(id);}
+function show(m,ok){var e=$('msg');e.textContent=m;e.className='msg '+(ok?'ok':'err');e.style.display='block';setTimeout(function(){e.style.display='none';},2200)}
+async function api(url,opts){var o=opts||{};var r=await fetch(url,o);return r.json();}
+function fmt(word,w){$('cw').textContent=w.word;$('cp').textContent=w.phonetic||'';
+  var m=$('cm');m.textContent=w.meaning||'';m.classList.remove('show');
+  var e=$('ce');e.textContent=(w.ai_example||'')+(w.ai_memorytip?('\n—— '+w.ai_memorytip):'');e.classList.remove('show');}
+function display(i){state.idx=i;
+  if(state.mode==='learn'){ if(state.idx>=state.words.length||state.idx<0){showDone();return;} fmt(state.idx,state.words[state.idx]);}
+  else { if(state.rIdx>=state.review.length||state.rIdx<0){$('doneBox').style.display='block';$('doneBox').querySelector('h2').textContent='复习完成';return;} fmt(0,state.review[state.rIdx]);}}
+function showMeaning(){$('cm').classList.add('show');$('ce').classList.add('show');}
+function mark(know){var w=state.mode==='learn'?state.words[state.idx]:state.review[state.rIdx];
+  if(!w){return;}
+  api('/family/cet4/mark',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word_id:w.id,know:know})}).then(function(d){
+    if(d.ok){ show(know?'✓ 认识':'△ 已标记不认识',true); loadStatus(); if(state.mode==='learn'){state.idx++;display(state.idx);} else {state.rIdx++;display(0);} }
+    else show(d.error||'操作失败',false);});}
+function cutWord(){var w=state.mode==='learn'?state.words[state.idx]:state.review[state.rIdx];if(!w)return;
+  if(!confirm('斩掉该词？将不再在你练习中出现（不影响其他人）。'))return;
+  api('/family/cet4/cut',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word_id:w.id})}).then(function(d){
+    if(d.ok){show('已斩掉该词',true);loadStatus();if(state.mode==='learn'){state.idx++;display(state.idx);}else{state.rIdx++;display(0);}}});}
+function nextWord(){ if(state.mode==='learn'){state.idx++;display(state.idx);} else {state.rIdx++;display(0);} }
+function showDone(){$('doneBox').style.display='block';$('doneBox').querySelector('h2').textContent='🎉 本组完成';}
+function startNew(){api('/family/cet4/start',{method:'POST'}).then(function(d){
+  if(d.ok){state.mode='learn';state.words=d.words||[];state.idx=0;$('doneBox').style.display='none';$('modeLabel').textContent='学习模式 · 新的一组(共'+d.total+'词)';display(0);loadStatus();}
+  else show(d.error||'取词失败',false);});}
+function startReview(){api('/family/cet4/review').then(function(d){
+  if(d.ok&&d.words&&d.words.length){state.mode='review';state.review=d.words;state.rIdx=0;state.idx=0;$('doneBox').style.display='none';$('modeLabel').textContent='复习模式 · 已接触词('+d.words.length+'词)';display(0);}
+  else show('暂无可复习的词',false);});}
+function resetAll(){if(!confirm('清空你所有的刷词进度？(不影响其他人)'))return;
+  api('/family/cet4/reset',{method:'POST'}).then(function(d){if(d.ok){show('已重置',true);loadStatus();startNew();}});}
+function loadStatus(){api('/family/cet4/status').then(function(d){
+  if(d.ok){$('stTotal').textContent=d.total_seen;$('stLearned').textContent=d.learned;$('stCut').textContent=d.cut;}});}
+loadStatus();
+// 自动开始一组
+api('/family/cet4/start',{method:'POST'}).then(function(d){
+  if(d.ok){state.mode='learn';state.words=d.words||[];state.idx=0;$('modeLabel').textContent='学习模式 · 新的一组(共'+d.total+'词)';display(0);loadStatus();}
+  else show(d.error||'取词失败',false);});
+</script>
+<script>
+(function(){var mq=window.matchMedia?(window.matchMedia('(prefers-color-scheme: dark)')):null;function apply(d){document.documentElement.classList.toggle('light',d===false);document.documentElement.classList.toggle('dark',d===true);document.documentElement.style.colorScheme=(d?'dark':'light');}apply(mq?(mq.matches):true);if(mq){var fn=function(e){apply(e.matches);};if(mq.addEventListener)mq.addEventListener('change',fn);else if(mq.addListener)mq.addListener(fn);}})();
+</script>
+</body></html>

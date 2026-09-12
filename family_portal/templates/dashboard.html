@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>我的空间 · 家人门户</title>
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220">
+<title>我的空间 · 访客门户</title>
 <style>
 :root{--bg:#0b1220;--card:#16233a;--card2:#1c2c47;--line:#2b3d5c;--tx:#e8eef7;--mut:#8da0bb;--acc:#5eb3ff;--acc2:#7c7cf0;--ok:#37d39a}
+html.light{--bg:#eef1f4;--card:#ffffff;--card2:#f3f6fb;--line:#d5dce6;--tx:#1a2332;--mut:#64748b;--acc:#0ea5e9;--acc2:#6d6df0;--ok:#059669}
 *{box-sizing:border-box;margin:0}
 body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:
  radial-gradient(1200px 600px at 85% -10%,rgba(124,124,240,.10),transparent 60%),
@@ -41,39 +44,57 @@ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;backgr
 .card:hover .nm .go{opacity:1}
 .card .ds{color:var(--mut);font-size:13px;margin-top:6px;line-height:1.5}
 .foot{color:var(--mut);font-size:12px;text-align:center;margin-top:34px;opacity:.75}
-@media(max-width:560px){.hero{flex-direction:row;padding:16px}.hero h1{font-size:19px}.grid{grid-template-columns:1fr}}
 </style></head><body>
 <div class="wrap">
-  <div class="top"><span class="brand"><span class="lg">🏠</span> 家人门户 <small>Family Hub</small></span>
+  <div class="top"><span class="brand"><span class="lg">🌐</span> 访客门户 <small>Visitor Hub</small></span>
     <a href="/family/logout">退出登录</a></div>
 
   <div class="hero">
     <div class="ava">{{ (user[:1] if user else '?')|upper }}</div>
     <div>
       <h1>你好，<span>{{ user }}</span> 👋</h1>
-      <p>今天想用点什么？家人门户已为你准备好专属服务。</p>
+      <p>欢迎来到访客门户。这里是安全的产品演示空间。</p>
     </div>
   </div>
 
-  <div class="sect">我的服务</div>
+  <div class="sect">我的空间</div>
   <div class="grid">
+    <a class="card" style="--tc:#5eb3ff" href="/family/cet4/">
+      <span class="tico" style="background:rgba(94,179,255,.15)">📖</span>
+      <span class="bd"><span class="nm">四级刷词 <i class="go">›</i></span>
+        <span class="ds">独立练习词库，进度只属于你自己，互不影响</span></span>
+    </a>
     <a class="card" style="--tc:#37d39a" href="/family/drive/">
       <span class="tico" style="background:rgba(55,211,154,.14)">🗂️</span>
       <span class="bd"><span class="nm">我的云盘 <i class="go">›</i></span>
-        <span class="ds">专属文件空间，只属于你的私人文件</span></span>
+        <span class="ds">专属个人文件空间，与其它访客完全隔离(配额 200MB)</span></span>
     </a>
-    <a class="card" style="--tc:#ff9d5c" href="/family/menu" target="_blank">
-      <span class="tico" style="background:rgba(255,157,92,.14)">🍳</span>
-      <span class="bd"><span class="nm">点餐 <i class="go">›</i></span>
-        <span class="ds">今天想吃什么？点好大厨就开做</span></span>
+    <a class="card" style="--tc:#ff9d5c" href="/family/menu/">
+      <span class="tico" style="background:rgba(255,157,92,.15)">🍳</span>
+      <span class="bd"><span class="nm">结对点餐 <i class="go">›</i></span>
+        <span class="ds">食客⇄厨师结对，点餐实时通知你的厨师</span></span>
     </a>
-    <a class="card" style="--tc:#7c7cf0" href="/family/desktop">
-      <span class="tico" style="background:rgba(124,124,240,.15)">🖥️</span>
-      <span class="bd"><span class="nm">我的桌面 <i class="go">›</i></span>
-        <span class="ds">属于你的独立远程桌面</span></span>
+    <a class="card" style="--tc:#7c7cf0" href="/family/">
+      <span class="tico" style="background:rgba(124,124,240,.15)">🏠</span>
+      <span class="bd"><span class="nm">门户首页 <i class="go">›</i></span>
+        <span class="ds">查看门户介绍与项目信息</span></span>
     </a>
   </div>
 
-  <div class="foot">🏠 家人门户 · 登录账号才能解锁各自空间</div>
+  {% if role in ('admin','internal','member') %}
+  <div class="sect">家人功能（家人专用，访客不可见）</div>
+  <div class="grid">
+    <a class="card" style="--tc:#ff9d5c" href="/family/desktop">
+      <span class="tico" style="background:rgba(255,157,92,.14)">🖥️</span>
+      <span class="bd"><span class="nm">远程桌面 <i class="go">›</i></span>
+        <span class="ds">家人专属的远程桌面（访客不可见）</span></span>
+    </a>
+  </div>
+  {% endif %}
+
+  <div class="foot">🌐 访客门户 · 邮箱自助验证注册，安全隔离的个人空间</div>
 </div>
+<script>
+(function(){var mq=window.matchMedia?(window.matchMedia('(prefers-color-scheme: dark)')):null;function apply(d){document.documentElement.classList.toggle('light',d===false);document.documentElement.classList.toggle('dark',d===true);document.documentElement.style.colorScheme=(d?'dark':'light');}apply(mq?(mq.matches):true);if(mq){var fn=function(e){apply(e.matches);};if(mq.addEventListener)mq.addEventListener('change',fn);else if(mq.addListener)mq.addListener(fn);}})();
+</script>
 </body></html>

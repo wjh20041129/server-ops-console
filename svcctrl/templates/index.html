@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0f14">
 <title>服务控制台 · svcctrl</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif}
@@ -58,6 +60,12 @@ body.hist-fullscreen #histPanel .hist-legend{padding:0 12px 8px;margin:0}
   body.hist-fullscreen #histPanel .hist-hint{display:none}
 }
 .hist-empty{color:#64748b;font-size:13px;text-align:center;padding:40px 10px}
+.hist-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(11,17,32,.72);border-radius:12px;z-index:3;color:#94a3b8;font-size:13px}
+.hist-loading .spinner{width:30px;height:30px;border:3px solid rgba(148,163,184,.25);border-top-color:#38bdf8;border-radius:50%;animation:histSpin .8s linear infinite}
+.hist-loading .txt{letter-spacing:1px}
+.hist-loading .txt::after{content:'';animation:histDots 1.4s steps(4,end) infinite}
+@keyframes histSpin{to{transform:rotate(360deg)}}
+@keyframes histDots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}100%{content:''}}
 .hist-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:#94a3b8;margin-top:10px;align-items:center}
 .hist-legend span{display:inline-flex;align-items:center;gap:5px}
 .hist-legend i{width:12px;height:3px;border-radius:2px;display:inline-block}
@@ -199,6 +207,7 @@ body.hist-fullscreen #histPanel .hist-legend{padding:0 12px 8px;margin:0}
 .um-role{font-size:10px;padding:2px 7px;border-radius:20px;flex-shrink:0}
 .um-role.owner{background:rgba(245,158,11,.15);color:#fbbf24}
 .um-role.member{background:rgba(56,189,248,.12);color:#7dd3fc}
+.um-role.visitor{background:rgba(148,163,184,.14);color:#94a3b8}
 .um-acts{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .um-owner-tip{font-size:11px;color:#475569}
 .um-link{border:none;background:none;font-size:12px;color:#7dd3fc;cursor:pointer;padding:4px 6px;border-radius:6px}
@@ -480,6 +489,160 @@ body{
 .toast{background:rgba(15,20,28,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(90,110,130,.4);box-shadow:0 0 0 1px rgba(61,220,132,.05) inset, 0 12px 40px rgba(0,0,0,.6)}
 .modal-confirm{background:rgba(3,5,9,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 
+/* ============================================================
+   浅色模式 (跟随系统) —— html.light 覆盖层
+   保持与深色同结构，仅替换颜色；不影响任何功能。
+   ============================================================ */
+html.light{color-scheme:light}
+html.light body{background:#eef1f4;color:#1a2332}
+html.light body::before{opacity:.5;background:radial-gradient(60% 40% at 18% -5%,rgba(14,165,233,.06),transparent 60%),radial-gradient(50% 36% at 85% 5%,rgba(99,102,241,.05),transparent 62%);animation:none}
+html.light a{color:#0284c7}
+/* 顶栏 */
+html.light .topbar{background:rgba(255,255,255,.78);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border-bottom:1px solid rgba(13,17,23,.08)}
+html.light .topbar .logo{color:#1a2332;text-shadow:none}
+html.light .topbar .dbstatus{color:#4b5563}
+/* 面板/卡片 */
+html.light .panel{background:#ffffff;border:1px solid #e2e8f0;box-shadow:0 6px 24px rgba(30,41,59,.06);backdrop-filter:none;-webkit-backdrop-filter:none}
+html.light .panel:hover{border-color:#b8c8dd}
+html.light .panel h2{color:#1f2937}
+html.light .gauge{background:#f6f8fb;border:1px solid #e8edf3}
+html.light .gauge:hover{background:#f0f4f9}
+html.light .gauge .g-name{color:#334155}
+html.light .gauge .g-detail{color:#5a6779}
+html.light .sysfast .f{background:#f6f8fb;border:1px solid #e8edf3}
+html.light .sysfast .f .k{color:#5a6779}
+html.light .sysfast .f .v{color:#111827}
+/* 图表/容器 */
+html.light .hist-chartbox{background:#f6f8fb;border:1px solid #e8edf3}
+html.light .hist-select{background:#ffffff;color:#1f2937;border:1px solid #cbd5e1}
+html.light .hist-lbl,.hist-gran{color:#64748b}
+html.light .hist-expand{background:rgba(255,255,255,.9);border:1px solid #cbd5e1;color:#0284c7}
+html.light .hist-expand:hover{border-color:#0284c7;color:#0284c7}
+html.light .hist-legend,html.light .hist-hint{color:#64748b}
+html.light body.hist-fullscreen #histPanel{background:#eef1f4}
+html.light .hist-loading{background:rgba(238,241,244,.85);color:#64748b}
+/* 应用卡 */
+html.light .app-tile{background:#ffffff !important;border:1px solid #e2e8f0 !important;backdrop-filter:none;-webkit-backdrop-filter:none}
+html.light .app-tile:hover{border-color:#0284c7 !important;box-shadow:0 10px 26px rgba(2,132,199,.12)}
+html.light .app-tile .nm{color:#1f2937}
+html.light .app-tile .ds{color:#64748b}
+html.light .app-tile.gone{border-color:#cbd5e1}
+/* 服务卡 */
+html.light .svc-card{background:#ffffff;border:1px solid #e2e8f0}
+html.light .svc-card:hover{border-color:#b8c8dd;box-shadow:0 10px 26px rgba(30,41,59,.08)}
+html.light .svc-card.dead{border-color:#fecaca}
+html.light .svc-name{color:#1f2937}
+html.light .svc-desc{color:#64748b}
+html.light .svc-meta .m{background:#f1f5f9;color:#64748b}
+html.light .svc-meta .m b{color:#334155}
+html.light .svc-actions .row{background:#f1f5f9;border:1px solid #e2e8f0}
+html.light .svc-actions .row .cell{color:#475569}
+html.light .svc-actions .row .cell:hover{background:#e5e9f0;color:#1f2937}
+html.light .svc-actions .row .cell.go{color:#059669}
+html.light .svc-actions .row .cell.stop{color:#dc2626}
+html.light .svc-actions .row .cell.borderL{border-left:1px solid #e2e8f0}
+html.light .svc-card .u-link{border-top:1px dashed #eaeef3}
+html.light .svc-card .u-link button{color:#94a3b8}
+html.light .svc-card .u-link button:hover{color:#dc2626}
+/* 按钮 */
+html.light .btn{color:#fff;box-shadow:none}
+html.light .btn-info{background:#0284c7;color:#fff;border:none}
+html.light .btn-info:hover{background:#0369a1}
+html.light .btn-ghost{background:#e6f2fb;color:#0b5c9c;border:1px solid rgba(2,132,199,.3)}
+html.light .btn-ghost:hover{background:#d3e8f7}
+html.light .btn-success{background:#059669;color:#fff;border:none}
+html.light .btn-success:hover{background:#047857}
+html.light .btn-danger{background:#dc2626;color:#fff;border:none}
+html.light .btn-danger:hover{background:#b91c1c}
+html.light .btn-warn{background:#d97706;color:#fff;border:none}
+html.light .btn-warn:hover{background:#b45309}
+/* MySQL */
+html.light .sql-card{background:#f6f8fb;border:1px solid #e8edf3}
+html.light .sql-card .k{color:#5a6779}
+html.light .sql-card .v{color:#059669}
+html.light .db-table th{color:#64748b;border-bottom:1px solid #e5eaf0}
+html.light .db-table td{color:#334155;border-bottom:1px solid #eef1f5}
+html.light .db-table tr:hover td{background:#f8fafc}
+/* 连接状态片 */
+html.light .link-chip{background:rgba(255,255,255,.8);border:1px solid #cbd5e1;color:#475569}
+html.light .link-chip.ok{background:#f0f7ff;border-color:#3b82f6;color:#1d4ed8;animation:none;box-shadow:0 0 0 1px rgba(59,130,246,.15)}
+html.light .link-chip.warn{background:#fffaf0;border-color:#f59e0b;color:#b45309;animation:none}
+html.light .link-chip.bad{background:#fff1f1;border-color:#dc2626;color:#b91c1c;animation:none}
+/* 用户管理 */
+html.light .um-item{background:#f8fafc;border:1px solid #e2e8f0}
+html.light .um-name{color:#1f2937}
+html.light .um-sec-title{color:#475569;border-bottom:1px solid #e2e8f0}
+html.light .um-link{color:#0284c7}
+html.light .um-link.danger{color:#dc2626}
+html.light .um-owner-tip,html.light .um-created{color:#7a8699}
+html.light .um-add{border-top:1px solid #e2e8f0}
+html.light .um-input,html.light input.um-row-input,html.light .um-row input{background:#ffffff;border:1px solid #cbd5e1;color:#1f2937 !important}
+html.light .um-input:focus,html.light .um-row input:focus{box-shadow:0 0 0 3px rgba(2,132,199,.12)}
+/* IP 面板 */
+html.light #ipToolbar{background:#ffffff !important;border:1px solid #e2e8f0!important}
+html.light #ipToolbar>span,html.light #ipToolbar>label{color:#4b5563}
+html.light #ipHistDate,html.light .iprow .mselect{background:#ffffff;color:#1f2937;border:1px solid #cbd5e1}
+html.light .portbtn{background:#ffffff;border:1px solid #cbd5e1;color:#475569}
+html.light .portbtn:hover{border-color:#0284c7;color:#0284c7}
+html.light .portbtn.on{background:#0369a1;border-color:#0369a1;color:#fff}
+html.light .iprow{background:#ffffff !important;border:1px solid #e2e8f0 !important}
+html.light .iprow:hover{border-color:#b0c4dd !important}
+html.light .iph{color:#334155}
+html.light .iph:hover{background:#f6f8fb}
+html.light .iph .url{color:#0369a1}
+html.light .iph .webn,html.light .iph .ua{color:#64748b}
+html.light .iph .last{color:#94a3b8}
+html.light .ipd{border-top:1px solid #e2e8f0}
+html.light .sub2{color:#475569}
+html.light .access-t th{color:#64748b;border-bottom:1px solid #dbe3ec}
+html.light .access-t td{color:#334155;border-bottom:1px solid #eef1f5}
+html.light .access-t .pf{background:#eaf3ff;color:#0369a1}
+html.light .iprow .blk{background:#475569;color:#fff}
+html.light .iprow.blkrow{background:#fdecec;border-color:#f87171}
+html.light .iprow.hr{border-color:#dc2626;box-shadow:inset 3px 0 0 #dc2626}
+html.light .iprow.hr .url{color:#dc2626}
+html.light .iprow.blkrow .blk{background:#dc2626;color:#fff}
+/* 手机端 IP 卡 */
+html.light .ipcard{background:#f8fafc;border:1px solid #e2e8f0}
+html.light .ipcard-st{background:#eef2f7;color:#334155}
+html.light .ipcard-path,html.light .ipcard-path b{color:#1f2937}
+html.light .ipcard-path b{color:#0369a1}
+html.light .ipcard-ua{color:#64748b}
+/* 日志抽屉 */
+html.light #logBox{background:#ffffff;border-left:1px solid #e2e8f0;box-shadow:-20px 0 60px rgba(30,41,59,.15)}
+html.light .lg-head{border-bottom:1px solid #e2e8f0}
+html.light .lg-body{background:#f8fafc;color:#334155}
+html.light .lg-status{border-top:1px solid #e2e8f0;color:#64748b}
+/* 弹窗 */
+html.light .toast{background:#ffffff;border:1px solid #e2e8f0;color:#1f2937;box-shadow:0 8px 24px rgba(30,41,59,.15)}
+html.light .modal-overlay{background:rgba(30,41,59,.4)}
+html.light .modal-confirm{background:#ffffff;border:1px solid #e2e8f0;box-shadow:0 24px 60px rgba(30,41,59,.25)}
+html.light .modal-confirm .mc-title{color:#1f2937}
+html.light .modal-confirm .mc-body{color:#475569}
+html.light .modal-confirm .mc-body b{color:#1f2937}
+html.light .mc-btn.cancel{background:#eef2f7;color:#334155}
+html.light .mc-btn.cancel:hover{background:#e2e8f0}
+/* 历史进程弹层 */
+html.light .hist-pp{background:rgba(30,41,59,.5)}
+html.light .hist-pp .box{background:#ffffff;border:1px solid #e2e8f0}
+html.light .hist-pp .head{background:#f8fafc;border-bottom:1px solid #e2e8f0}
+html.light .hist-pp .head .t{color:#1f2937}
+html.light .hist-pp .head .x{color:#94a3b8}
+html.light .hist-pp th{color:#64748b;background:#f8fafc}
+html.light .hist-pp td{color:#334155;border-bottom:1px solid #eef1f5}
+html.light .hist-pp td.pid,html.light .hist-pp td.cpu{color:#0369a1}
+html.light .hist-pp td.cmd{color:#64748b}
+/* 登录页在 login.html；此处保留登录框也跟随 */
+html.light .login-box{background:#ffffff !important;border:1px solid #e2e8f0 !important;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 20px 60px rgba(30,41,59,.18)}
+html.light .login-box h1{color:#1f2937}
+html.light .login-box p{color:#64748b}
+html.light .login-box input{background:#f8fafc;border:1px solid #cbd5e1;color:#1f2937}
+html.light .login-box input:focus{border-color:#0284c7;box-shadow:0 0 0 3px rgba(2,132,199,.12)}
+/* 状态光点保持彩色 */
+html.light .ok{background:#22c55e}
+html.light .warn{background:#f59e0b}
+html.light .bad{background:#ef4444}
+
 </style>
 </head>
 <body>
@@ -685,6 +848,8 @@ var SVCTRL_APPS = [
      url:APP_BASE+'/vnc/' },
   {name:'VS Code',  iconRaw:'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>', color:'#f59e0b', svcId:'codeserver', desc:'code-server',
      url:APP_BASE+'/code/' },
+  {name:'运维工具箱', iconRaw:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>', color:'#8b5cf6', svcId:'opskit', desc:'OpsKit 备份/服务/日志/安全',
+     url:APP_BASE+'/opskit/' },
 ];
 
 /* ---------- 认证检查 ---------- */
@@ -765,15 +930,47 @@ async function loadSystem(){
 
 /* ---------- 历史时刻表盘 ---------- */
 var histChart=null;
+var _histLoadingEl=null;
+function histShowLoading(msg){
+  var box=document.getElementById('histChart') && document.getElementById('histChart').parentNode;
+  if(!box) return;
+  if(_histLoadingEl) _histLoadingEl.remove();
+  _histLoadingEl=document.createElement('div');
+  _histLoadingEl.className='hist-loading';
+  _histLoadingEl.innerHTML='<div class="spinner"></div><div class="txt">'+(msg||'请稍等')+'</div>';
+  box.appendChild(_histLoadingEl);
+}
+function histHideLoading(){
+  if(_histLoadingEl){ _histLoadingEl.remove(); _histLoadingEl=null; }
+}
+function histShowEmpty(msg){
+  histHideLoading();
+  var box=document.getElementById('histChart') && document.getElementById('histChart').parentNode;
+  if(!box) return;
+  var old=box.querySelector('.hist-empty-overlay'); if(old) old.remove();
+  var el=document.createElement('div');
+  el.className='hist-empty hist-empty-overlay';
+  el.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(11,17,32,.72);border-radius:12px;z-index:3';
+  el.textContent=msg;
+  box.appendChild(el);
+}
+function histHideEmpty(){
+  var box=document.getElementById('histChart') && document.getElementById('histChart').parentNode;
+  if(!box) return;
+  var old=box.querySelector('.hist-empty-overlay'); if(old) old.remove();
+}
+
 async function histLoad(){
   var date=document.getElementById('histDate').value;
-  if(!date){ document.getElementById('histChart').parentNode.innerHTML='<div class="hist-empty">暂无 atop 数据</div>'; return; }
-  try{ var d= await api('/api/atop/summary?date='+date); }catch(e){ return; }
+  if(!date){ histShowEmpty('暂无 atop 数据'); return; }
+  histShowLoading('加载中，请稍等');
+  try{ var d= await api('/api/atop/summary?date='+date); }catch(e){ histHideLoading(); return; }
+  histHideLoading();
   if(!d.ok){ return; }
   document.getElementById('histGran').textContent = d.step_seconds>=60 ? ('采样间隔 '+(d.step_seconds/60)+' 分钟') : (d.step_seconds+' 秒');
   var pts=d.points||[];
-  var box=document.getElementById('histChart').parentNode;
-  if(!pts.length){ box.innerHTML='<div class="hist-empty">该日期暂无采样点</div>'; return; }
+  if(!pts.length){ histShowEmpty('该日期暂无采样点'); return; }
+  histHideEmpty();
   // 确保 canvas 存在（首次已内联，无需重建）
   var cv=document.getElementById('histChart');
   var labels=pts.map(function(p){return p.time;});
@@ -861,10 +1058,15 @@ async function histShowProcess(date, hm){
     });
   }catch(e){ document.getElementById('histPpEmpty').style.display='block'; }
 }
+var _histInited=false;
 async function histInit(){
+  // 幂等：重复调用（回前台/重连）不再堆叠日期选项、不重复画图
+  if(_histInited) return;
   try{ var d= await api('/api/atop/dates');
     if(!d.ok||!d.dates||!d.dates.length){ return; }
+    _histInited=true;
     var sel=document.getElementById('histDate');
+    sel.innerHTML='';
     d.dates.forEach(function(dt){
       var o=document.createElement('option');
       o.value=dt; o.textContent=dt.slice(0,4)+'-'+dt.slice(4,6)+'-'+dt.slice(6,8);
@@ -1455,10 +1657,13 @@ async function openUsers(){
       '<div id="umList">加载中…</div>'+
       '<div class="um-add"><div class="um-row"><input id="umName" type="text" placeholder="用户名" maxlength="32" autocomplete="off"><input id="umPwd" type="password" placeholder="密码(至少6位)" maxlength="64" autocomplete="new-password"></div>'+
       '<div class="um-row" style="margin-top:8px;justify-content:flex-end"><button class="mc-btn primary" id="umAddBtn">＋ 添加控制台账号</button></div></div>'+
-      '<div class="um-sec-title" style="margin-top:18px">家庭成员账号（家人门户 /family/）</div>'+
+      '<div class="um-sec-title" style="margin-top:18px">家人/访客账号（家人门户；家人可进桌面，访客仅云盘）</div>'+
       '<div id="fmList">加载中…</div>'+
       '<div class="um-add"><div class="um-row"><input id="fmName" type="text" placeholder="用户名" maxlength="64" autocomplete="off"><input id="fmPwd" type="password" placeholder="密码(至少6位)" maxlength="64" autocomplete="new-password"></div>'+
-      '<div class="um-row" style="margin-top:8px;justify-content:flex-end"><button class="mc-btn primary" id="fmAddBtn">＋ 添加家庭成员</button></div></div>'+
+      '<div class="um-row" style="margin-top:8px;gap:8px"><select id="fmRole" style="flex:1;padding:9px 10px;border-radius:8px;border:1px solid var(--line,#334155);background:var(--card,#1e293b);color:#e2e8f0;font-size:13px">'+
+        '<option value="member">家人（可进远程桌面）</option>'+
+        '<option value="visitor">访客（仅云盘，禁桌面）</option>'+
+      '</select><button class="mc-btn primary" id="fmAddBtn">＋ 添加</button></div></div>'+
       '</div>'+
       '<div class="mc-actions"><button class="mc-btn cancel" id="umCloseBtn">关闭</button></div></div>';
     document.body.appendChild(ov);
@@ -1472,10 +1677,12 @@ async function openUsers(){
   await loadUsers(); await loadFamUsers();
 }
 function _umItemHtml(u, scope){
-  var role = u.role==='owner'
-    ?'<span class="um-role owner">管理员</span>'
-    :(u.status==='pending'?'<span class="um-role pending">待审批</span>'
-      :(u.status==='active'?'<span class="um-role member">成员</span>':'<span class="um-role member">'+escHtml(u.status||'成员')+'</span>'));
+  var role;
+  if(u.role==='owner'){ role='<span class="um-role owner">管理员</span>'; }
+  else if(u.role==='member'){ role='<span class="um-role member">家人</span>'; }
+  else if(u.role==='visitor'){ role='<span class="um-role visitor">访客</span>'; }
+  else if(u.status==='pending'){ role='<span class="um-role pending">待审批</span>'; }
+  else { role='<span class="um-role member">'+escHtml(u.status||'成员')+'</span>'; }
   var acts='';
   if(scope==='svc'){
     acts = u.role==='owner' ? '<span class="um-owner-tip">不可删除</span>'
@@ -1523,12 +1730,14 @@ async function loadFamUsers(){
 async function addFamUser(){
   var n=document.getElementById('fmName'), p=document.getElementById('fmPwd');
   var name=(n.value||'').trim(), pwd=p.value||'';
+  var roleSel=document.getElementById('fmRole');
+  var role=roleSel?roleSel.value:'member';
   if(!name){ toast('✗ 请输入用户名'); return; }
   if(pwd.length<6){ toast('✗ 密码至少 6 位'); return; }
   var btn=document.getElementById('fmAddBtn'); btn.disabled=true;
   try{
-    var d=await api('/api/fam/users/add',{method:'POST',body:JSON.stringify({username:name,password:pwd})});
-    if(d.success){ toast('✓ 已添加家庭成员 '+name); n.value=''; p.value=''; await loadFamUsers(); }
+    var d=await api('/api/fam/users/add',{method:'POST',body:JSON.stringify({username:name,password:pwd,role:role})});
+    if(d.success){ toast('✓ 已添加 '+name+'（'+(d.role==='visitor'?'访客':'家人')+'）'); n.value=''; p.value=''; await loadFamUsers(); }
     else toast('✗ '+(d.error||'添加失败'));
   }catch(e){ toast('✗ 请求失败'); }
   btn.disabled=false;
@@ -1687,11 +1896,20 @@ function _onVisibility(){
 startPolling();
 // 合并的可见性处理（原来只处理 linkPing，现在统一启停轮询）
 document.addEventListener('visibilitychange', _onVisibility);
-/* 主题已锁定为深色模式：移除白昼切换，永远使用深色（防止白字看不见）。 */
+/* 主题：跟随系统深/浅色（无手动按钮）。系统切深→变暗，切浅→变亮。 */
 (function(){
-  try{ localStorage.removeItem('svcctrl_theme'); }catch(e){}
-  document.documentElement.classList.remove('light');
-  document.documentElement.classList.add('dark');
+  var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function apply(dark){
+    document.documentElement.classList.toggle('light', dark===false);
+    document.documentElement.classList.toggle('dark', dark!==false);
+    if(document.documentElement.style) document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+  }
+  apply(mq ? mq.matches : true);
+  if(mq){
+    var fn = function(e){ apply(e.matches); };
+    if(mq.addEventListener) mq.addEventListener('change', fn);
+    else if(mq.addListener) mq.addListener(fn);
+  }
 })();
 </script>
 </body>

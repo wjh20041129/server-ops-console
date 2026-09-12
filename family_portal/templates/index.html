@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>家人门户</title>
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f172a">
+<title>访客门户</title>
 <style>
 :root{--bg:#0f172a;--card:#1e293b;--line:#334155;--tx:#e2e8f0;--mut:#94a3b8;--acc:#38bdf8;--ok:#22c55e;--err:#ef4444}
+html.light{--bg:#eef1f4;--card:#ffffff;--line:#d5dce6;--tx:#1a2332;--mut:#64748b;--acc:#0ea5e9;--ok:#059669;--err:#dc2626}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--tx);display:flex;align-items:center;justify-content:center;min-height:100vh}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:36px 30px;width:min(92vw,360px);box-shadow:0 10px 30px rgba(0,0,0,.3);text-align:center}
@@ -17,11 +20,14 @@ p.sub{color:var(--mut);font-size:13px;margin-bottom:26px}
 .flash.error{background:rgba(239,68,68,.12);color:var(--err)}
 </style></head><body>
 <div class="card">
-  <div style="font-size:40px">🏠</div>
-  <h1>家人门户</h1>
-  <p class="sub">登录后使用私人云盘与点餐服务</p>
+  <div style="font-size:40px">🌐</div>
+  <h1>访客门户</h1>
+  <p class="sub">登录后使用个人服务；访客可自助注册</p>
   {% with m=get_flashed_messages(with_categories=true) %}{% for c,t in m %}<div class="flash {{c}}">{{t}}</div>{% endfor %}{% endwith %}
-  <a class="btn" href="/family/login"><span class="ic">🔑</span> 登 录</a>
-  <a class="btn ghost" href="/family/register"><span class="ic">📝</span> 注册新账号（需管理员确认）</a>
+  <a class="btn" href="/login"><span class="ic">🔑</span> 统 一 登 录</a>
+  <a class="btn ghost" href="/family/register"><span class="ic">📝</span> 访客自助注册（邮箱验证）</a>
 </div>
+<script>
+(function(){var mq=window.matchMedia?(window.matchMedia('(prefers-color-scheme: dark)')):null;function apply(d){document.documentElement.classList.toggle('light',d===false);document.documentElement.classList.toggle('dark',d===true);document.documentElement.style.colorScheme=(d?'dark':'light');}apply(mq?(mq.matches):true);if(mq){var fn=function(e){apply(e.matches);};if(mq.addEventListener)mq.addEventListener('change',fn);else if(mq.addListener)mq.addListener(fn);}})();
+</script>
 </body></html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220">
+<title>结对点餐 · 访客门户</title>
+<style>
+:root{--bg:#0b1220;--card:#16233a;--card2:#1c2c47;--line:#2b3d5c;--tx:#e8eef7;--mut:#8da0bb;--acc:#5eb3ff;--acc2:#7c7cf0;--ok:#37d39a;--warn:#ff9d5c;--err:#ff6b6b}
+html.light{--bg:#eef1f4;--card:#ffffff;--card2:#f3f6fb;--line:#d5dce6;--tx:#1a2332;--mut:#64748b;--acc:#0ea5e9;--acc2:#6d6df0;--ok:#059669;--warn:#ea9a4b;--err:#dc2626}
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:
+ radial-gradient(1200px 600px at 85% -10%,rgba(124,124,240,.10),transparent 60%),
+ radial-gradient(1000px 500px at -10% 10%,rgba(94,179,255,.10),transparent 55%),var(--bg);
+ color:var(--tx);min-height:100vh;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:18px 20px 40px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800}
+.brand .lg{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+ background:linear-gradient(135deg,#ff9d5c,#f59e0b);font-size:15px;box-shadow:0 4px 14px rgba(255,157,92,.35)}
+.top a{color:var(--mut);text-decoration:none;font-size:14px;border:1px solid var(--line);padding:6px 12px;border-radius:8px}
+.top a:hover{color:var(--tx)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:18px}
+.panel h3{font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600}
+.badge.eater{background:rgba(94,179,255,.15);color:#5eb3ff}
+.badge.cooker{background:rgba(255,157,92,.15);color:#ff9d5c}
+.badge.r{background:rgba(148,163,184,.15);color:#94a3b8}
+.btn{background:linear-gradient(135deg,#5eb3ff,#3b82f6);border:none;color:#fff;padding:11px 18px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer}
+.btn.ghost{background:var(--card2);border:1px solid var(--line);color:var(--tx)}
+.btn.ok{background:linear-gradient(135deg,#22c55e,#16a34a)}
+.btn:hover{filter:brightness(1.08)}
+input[type=text],input[type=number]{padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card2);color:var(--tx);font-size:14px;width:100%}
+.row{display:flex;gap:10px;align-items:center;margin-top:10px}
+.code{font-size:30px;font-weight:800;letter-spacing:6px;color:var(--acc);text-align:center;padding:16px;background:rgba(94,179,255,.07);border:1px dashed var(--line);border-radius:14px;margin:12px 0}
+.dishes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.dish{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;transition:.15s;position:relative}
+.dish:hover{border-color:var(--acc)}
+.dish.sel{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok)}
+.dish .e{font-size:26px}
+.dish .n{font-size:13px;font-weight:600;margin-top:4px}
+.dish .p{color:var(--mut);font-size:12px;margin-top:2px}
+.dish .q{position:absolute;top:8px;right:8px;background:var(--ok);color:#fff;font-size:11px;border-radius:20px;padding:2px 8px;display:none}
+.cart{position:sticky;bottom:0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.orders .orow{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:9px}
+.orow .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.orow .items{color:var(--mut);font-size:13px;line-height:1.7}
+.st{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600}
+.st.pending{background:rgba(255,157,92,.15);color:#ff9d5c}
+.st.doing{background:rgba(94,179,255,.15);color:#5eb3ff}
+.st.done{background:rgba(34,197,94,.15);color:#37d39a}
+.msg{position:fixed;top:18px;left:50%;transform:translateX(-50%);padding:11px 20px;border-radius:10px;font-size:14px;z-index:99;display:none;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.msg.ok{background:rgba(34,197,94,.9);color:#fff}
+.msg.err{background:rgba(239,68,68,.9);color:#fff}
+.note{color:var(--mut);font-size:12px;margin-top:6px}
+</style></head><body>
+<div class="wrap">
+  <div class="top"><span class="brand"><span class="lg">🍳</span> 结对点餐 <small style="color:var(--mut);font-weight:400">食客⇄厨师</small></span>
+    <a href="/family/dashboard">← 我的空间</a></div>
+
+  <div class="panel">
+    <h3>🤝 我的结对 <span id="myBadge" class="badge r">未结对</span></h3>
+    <div id="pairArea"></div>
+  </div>
+
+  <div class="panel" id="menuPanel" style="display:none">
+    <h3>📋 菜单</h3>
+    <div class="dishes" id="dishList"></div>
+    <div class="cart" id="cart">
+      <div style="color:var(--mut);font-size:13px" id="cartInfo">还没选菜</div>
+      <button class="btn ok" onclick="placeOrder()">下单给厨师</button>
+    </div>
+  </div>
+
+  <div class="panel" id="orderPanel" style="display:none">
+    <h3>📢 订单 <span id="orderCount" class="badge r">0</span></h3>
+    <div class="orders" id="orderList"></div>
+  </div>
+</div>
+<div class="msg" id="msg"></div>
+<script>
+var myRole=null, partner=null, dishes=[], cart={};
+function $(id){return document.getElementById(id);}
+function show(m,ok){var e=$('msg');e.textContent=m;e.className='msg '+(ok?'ok':'err');e.style.display='block';setTimeout(function(){e.style.display='none';},2400)}
+async function api(url,opts){var o=opts||{};var r=await fetch(url,o);return r.json();}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+
+async function loadPair(){
+  var d=await api('/family/menu/pair/status');
+  var a=$('pairArea'), b=$('myBadge');
+  if(!d.paired){
+    b.textContent='未结对'; b.className='badge r';
+    a.innerHTML='<div style="color:var(--mut);font-size:13px;margin-bottom:10px">想当<b style="color:#5eb3ff">食客</b>点餐，或当<b style="color:#ff9d5c">厨师</b>接单？先结对。</div>'+
+      '<div class="row"><button class="btn" onclick="createPair()">🔗 生成绑定码（我点餐，等厨师）</button></div>'+
+      '<div class="row"><input type="text" id="bindCode" placeholder="输入对方给你的绑定码（我当厨师接单）"><button class="btn ghost" onclick="bindPair()">绑定</button></div>';
+    $('menuPanel').style.display='none'; $('orderPanel').style.display='none';
+    return;
+  }
+  myRole=d.role; partner=d.partner;
+  b.textContent = d.role==='eater' ? '食客' : '厨师';
+  b.className = 'badge '+d.role;
+  if(d.status==='waiting'){
+    a.innerHTML='<div style="color:var(--mut);font-size:13px">等待厨师绑定中… 把下方绑定码发给对方</div>'+
+      '<div class="code" id="curCode"></div><button class="btn ghost" onclick="unbind()">取消</button>';
+    api('/family/menu/pair/create').then(function(){});
+    return;
+  }
+  a.innerHTML='<div style="color:var(--mut);font-size:13px">已与 <b style="color:var(--tx)">'+esc(partner)+'</b> 结对'+
+    (d.role==='eater'?'（你是食客，点餐会发给厨师）':'（你是厨师，接收食客订单）')+'</div>'+
+    '<button class="btn ghost" style="margin-top:10px" onclick="unbind()">解绑</button>';
+  if(myRole==='eater'){ $('menuPanel').style.display='block'; $('orderPanel').style.display='none'; loadMenu(); }
+  else { $('menuPanel').style.display='none'; $('orderPanel').style.display='block'; loadOrders(); }
+}
+async function createPair(){
+  var d=await api('/family/menu/pair/create',{method:'POST'});
+  if(d.ok){ show('绑定码：'+d.code+'（发给厨师）',true); $('curCode').textContent=d.code; loadPair(); }
+  else show(d.error,false);
+}
+async function bindPair(){
+  var code=$('bindCode').value.trim();
+  if(!code){show('输入绑定码',false);return;}
+  var d=await api('/family/menu/pair/bind',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})});
+  if(d.ok){show('已绑定成为厨师',true);loadPair();} else show(d.error,false);
+}
+async function unbind(){
+  if(!confirm('解绑？'))return;
+  await api('/family/menu/pair/unbind',{method:'POST'}); show('已解绑',true); loadPair();
+}
+async function loadMenu(){
+  var d=await api('/family/menu/dishes');
+  if(!d.ok){show(d.error,false);return;}
+  dishes=d.dishes;
+  var el=$('dishList'); el.innerHTML='';
+  dishes.forEach(function(x){
+    var c=document.createElement('div'); c.className='dish'; c.dataset.id=x.id;
+    c.innerHTML='<div class="e">'+esc(x.emoji||'🍽️')+'</div><div class="n">'+esc(x.name)+'</div>'+
+      '<div class="p">¥'+(x.price>0?x.price.toFixed(2):'待定')+'</div><div class="q" id="q'+x.id+'"></div>';
+    c.onclick=function(){addDish(x)};
+    el.appendChild(c);
+  });
+}
+function addDish(x){
+  cart[x.id]=(cart[x.id]||0)+1; renderCart();
+}
+function renderCart(){
+  dishes.forEach(function(x){
+    var q=$('q'+x.id); var cnt=cart[x.id]||0;
+    if(q){q.style.display=cnt>0?'block':'none'; q.textContent='×'+cnt;}
+    var dish=document.querySelector('.dish[data-id="'+x.id+'"]'); if(dish){dish.classList.toggle('sel',cnt>0);}
+  });
+  var n=Object.values(cart).reduce(function(a,b){return a+b;},0);
+  $('cartInfo').textContent=n>0?('已选 '+n+' 份'):'还没选菜';
+}
+async function placeOrder(){
+  if(!Object.keys(cart).length){show('先选菜',false);return;}
+  var d=await api('/family/menu/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:cart,note:''})});
+  if(d.ok){show('下单成功！已通知厨师',true);cart={};renderCart();loadOrders();} else show(d.error,false);
+}
+async function loadOrders(){
+  var d=await api('/family/menu/orders');
+  var el=$('orderList');
+  $('orderCount').textContent= d.orders?d.orders.length:0;
+  if(!d.orders||!d.orders.length){el.innerHTML='<div style="color:var(--mut);font-size:13px;padding:10px 0">暂无订单</div>';return;}
+  el.innerHTML=d.orders.map(function(o){
+    var items=(o.items||[]).map(function(i){return esc(i.dish_name)+' ×'+i.quantity;}).join('、');
+    var st={pending:'待做',doing:'制作中',done:'已完成'}[o.status]||o.status;
+    return '<div class="orow"><div class="head"><b>#'+o.id+' '+esc(o.ordered_by||'匿名')+'</b>'+
+      '<span class="st '+esc(o.status)+'">'+esc(st)+'</span></div>'+
+      '<div class="items">'+items+(o.note?('（'+esc(o.note)+'）'):'')+'</div>'+
+      (myRole==='cooker'&&o.status!=='done'?'<div class="row"><button class="btn ghost" style="margin-top:8px;font-size:12px" onclick="setStatus('+o.id+',\''+'doing'+'\')">开始做</button>'+
+        '<button class="btn ok" style="margin-top:8px;font-size:12px" onclick="setStatus('+o.id+',\''+'done'+'\')">完成</button></div>':'')+
+      '</div>';
+  }).join('');
+}
+async function setStatus(id,st){
+  var d=await api('/family/menu/order/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order_id:id,status:st})});
+  if(d.ok){show('状态已更新',true);loadOrders();} else show(d.error,false);
+}
+loadPair();
+// 轮询订单(厨师视角)
+setInterval(function(){ if(myRole==='cooker') loadOrders(); }, 8000);
+</script>
+<script>
+(function(){var mq=window.matchMedia?(window.matchMedia('(prefers-color-scheme: dark)')):null;function apply(d){document.documentElement.classList.toggle('light',d===false);document.documentElement.classList.toggle('dark',d===true);document.documentElement.style.colorScheme=(d?'dark':'light');}apply(mq?(mq.matches):true);if(mq){var fn=function(e){apply(e.matches);};if(mq.addEventListener)mq.addEventListener('change',fn);else if(mq.addListener)mq.addListener(fn);}})();
+</script>
+</body></html>

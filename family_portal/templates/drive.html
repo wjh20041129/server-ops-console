@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>我的云盘 · 家人门户</title>
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f172a">
+<title>我的云盘 · 访客门户</title>
 <style>
 :root{--bg:#0f172a;--card:#1e293b;--line:#334155;--tx:#e2e8f0;--mut:#94a3b8;--acc:#38bdf8;--ok:#22c55e;--err:#ef4444}
+html.light{--bg:#eef1f4;--card:#ffffff;--line:#d5dce6;--tx:#1a2332;--mut:#64748b;--acc:#0ea5e9;--ok:#059669;--err:#dc2626}
 *{box-sizing:border-box;margin:0}
 body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
 .top{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--line);max-width:940px;margin:0 auto}
@@ -12,7 +15,7 @@ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;backgr
 .hello{font-size:18px;margin-bottom:4px}.hello b{color:var(--acc)}
 .hint{color:var(--mut);font-size:13px;margin-bottom:18px}
 .upload{display:flex;gap:10px;align-items:center;background:var(--card);border:1px dashed var(--line);padding:14px;border-radius:12px;margin-bottom:18px}
-body{background:#0f172a}
+body{background:var(--bg)}
 .upload input[type=file]{flex:1;color:var(--mut)}
 .upbtn{background:var(--acc);border:none;color:#062438;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer}
 .list{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
@@ -31,8 +34,9 @@ body{background:#0f172a}
 <div class="top"><span class="t">🗂️ 我的云盘</span><a href="/family/dashboard">← 我的空间</a></div>
 <div class="wrap">
   <div class="hello"><b>{{ user }}</b> 的专属空间</div>
-  <div class="hint">只有你能看到和操作这里的文件。请勿存放涉及他人隐私或敏感内容。</div>
+  <div class="hint">只有你能看到和操作这里的文件，系统会自动隔离你与其它访客的空间。</div>
   <div id="msg" class="msg"></div>
+  <div id="qbar"></div>
   <div id="bar"><i></i></div>
   <div class="upload">
     <input type="file" id="file">
@@ -43,14 +47,17 @@ body{background:#0f172a}
 <script>
 function show(m,ok){var e=document.getElementById('msg');e.textContent=m;e.className='msg '+(ok?'ok':'err');e.style.display='block';setTimeout(function(){e.style.display='none';},3000)}
 function fmt(s){if(s<1024)return s+'B';if(s<1048576)return (s/1024).toFixed(1)+'KB';return (s/1048576).toFixed(1)+'MB'}
+function qbar(used,quota,files){var el=document.getElementById('qbar');var pct=quota>0?Math.min(100,Math.round(used/quota*100)):0;
+  el.innerHTML='<div style="font-size:12px;color:var(--mut);margin-bottom:6px">已用 <b style="color:'+(pct>90?'var(--err)':'var(--acc)')+'">'+fmt(used)+'</b> / '+fmt(quota)+' · 共 '+files+' 个文件 · 单文件最大 20MB</div>'+
+  '<div style="height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:14px"><div style="height:100%;width:'+pct+'%;background:'+(pct>90?'var(--err)':'var(--acc)')+'"></div></div>'}
 function load(){fetch('/family/drive/list').then(function(r){return r.json()}).then(function(a){
-  var el=document.getElementById('list');
-  if(!a.length){el.innerHTML='<div class="empty">目录为空，上传第一个文件吧</div>';return}
-  el.innerHTML=a.map(function(f){var ic=f.kind==='dir'?'📁':'📄';
+  var items=a.items||a;var el=document.getElementById('list');qbar(a.used||0,a.quota||0,a.files||0)
+  if(!items.length){el.innerHTML='<div class="empty">目录为空，上传第一个文件吧</div>';return}
+  el.innerHTML=items.map(function(f){var ic=f.kind==='dir'?'📁':'📄';
     var size=f.kind==='dir'?'-':fmt(f.size);
     var dl=(f.kind==='file')?'<a href="/family/drive/download/'+encodeURIComponent(f.name)+'">下载</a><button class="del" onclick="del(\''+f.name.replace(/'/g,"\\'")+'\')">删除</button>':'';
     return '<div class="row"><span class="fi">'+ic+'</span><span class="fn">'+f.name+'</span><span class="fs">'+size+'<span>'+dl+'</span></span></div>'}).join('')
-}).catch(function(){el.innerHTML='<div class="empty">加载失败</div>'})}
+}).catch(function(){var el=document.getElementById('list');el.innerHTML='<div class="empty">加载失败</div>'})}
 function up(){var f=document.getElementById('file').files[0];if(!f){show('先选择文件',0);return}
   var fd=new FormData();fd.append('file',f)
   var xhr=new XMLHttpRequest();
@@ -63,5 +70,8 @@ function del(n){if(!confirm('删除文件 "'+n+'"？不可恢复'))return
   var fd=new FormData();fd.append('n',n)
   fetch('/family/drive/delete/'+encodeURIComponent(n),{method:'POST'}).then(function(r){return r.json()}).then(function(r){show(r.ok?'已删除':'删除失败',r.ok?1:0);load()})}
 load();
+</script>
+<script>
+(function(){var mq=window.matchMedia?(window.matchMedia('(prefers-color-scheme: dark)')):null;function apply(d){document.documentElement.classList.toggle('light',d===false);document.documentElement.classList.toggle('dark',d===true);document.documentElement.style.colorScheme=(d?'dark':'light');}apply(mq?(mq.matches):true);if(mq){var fn=function(e){apply(e.matches);};if(mq.addEventListener)mq.addEventListener('change',fn);else if(mq.addListener)mq.addListener(fn);}})();
 </script>
 </body></html>
