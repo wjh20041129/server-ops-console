@@ -51,3 +51,6 @@ img/
 Thumbs.db
 svcctrl/blocklist.json
 blocklist.json
+
+# 塔科夫 Lite 游戏按用户要求不入公开仓库（线上源在 /root/tarkov_lite，仅本地）
+tarkov_lite/
